@@ -3,8 +3,8 @@ import chalk from 'chalk';
 import { getSessions, getFileChanges, getCommits, getAIUsage, getNotes } from '../../src/db';
 import { setConfig, getConfig } from '../../src/db';
 
-const SUPABASE_URL = 'https://igmpvdvygkgjilakgslz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbXB2ZHZ5Z2tnamlsYWtnc2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjI1ODAsImV4cCI6MjA5NTAzODU4MH0.iQMMxcRLsh1wJppUZSirsP0TKdDyzWD4aafXPJvFPFg';
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
