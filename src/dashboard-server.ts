@@ -414,7 +414,7 @@ export function buildApiRouter(): Router {
 
   router.get('/version', (_req, res) => {
     try {
-      const pkg = require('../package.json');
+      const pkg = require('../../package.json');
       res.json({ version: pkg.version, apiVersion: 1 });
     } catch {
       res.json({ version: 'unknown', apiVersion: 1 });
@@ -543,7 +543,7 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // ── Static files with cache headers ──────────────────────
 
-  const staticDir = join(__dirname, 'dashboard-ui');
+  const staticDir = join(__dirname, '../dashboard-ui');
 
   // Hashed assets (js/css with content hash in filename): immutable, 1 year
   app.use('/assets', express.static(join(staticDir, 'assets'), {

@@ -43,7 +43,7 @@ import { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/sr
 import { requirePro } from '../pro/src/gates';
 
 const program = new Command();
-const pkg = require('../package.json');
+const pkg = require('../../package.json');
 const VERSION: string = pkg.version;
 const SCHEMA_VERSION = 1;
 
