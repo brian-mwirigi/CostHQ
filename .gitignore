@@ -6,3 +6,5 @@ dist/
 *.db
 *.sqlite
 .devsession/
+.codesession/
+nul

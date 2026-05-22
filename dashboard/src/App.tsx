@@ -7,11 +7,12 @@ import ModelBreakdown from './components/ModelBreakdown';
 import Insights from './components/Insights';
 import Alerts from './components/Alerts';
 import Donate from './components/Donate';
-import Pricing from './components/Pricing';
-import Help from './components/Help';
-import Changelog from './components/Changelog';
+import Feedback from './components/Feedback';
+import ShareCard from './components/ShareCard';
+import Onboarding from './components/Onboarding';
+import Banner from './components/Banner';
 
-export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'donate' | 'pricing' | 'help' | 'changelog';
+export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'donate' | 'feedback' | 'share';
 
 // ── URL-based routing (no react-router needed) ─────────────
 
@@ -26,9 +27,8 @@ function parseRoute(): { page: Page; sessionId: number | null } {
   if (path === '/insights') return { page: 'insights', sessionId: null };
   if (path === '/alerts') return { page: 'alerts', sessionId: null };
   if (path === '/donate') return { page: 'donate', sessionId: null };
-  if (path === '/pricing') return { page: 'pricing', sessionId: null };
-  if (path === '/help') return { page: 'help', sessionId: null };
-  if (path === '/changelog') return { page: 'changelog', sessionId: null };
+  if (path === '/feedback') return { page: 'feedback', sessionId: null };
+  if (path === '/share') return { page: 'share', sessionId: null };
   return { page: 'overview', sessionId: null };
 }
 
@@ -42,6 +42,33 @@ export default function App() {
   const initial = parseRoute();
   const [page, setPage] = useState<Page>(initial.page);
   const [selectedSession, setSelectedSession] = useState<number | null>(initial.sessionId);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('cs-onboarded')) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  // Telemetry ping
+  useEffect(() => {
+    if (localStorage.getItem('cs-telemetry') === '1') {
+      try {
+        fetch('https://api.brianmunene.me/telemetry?tool=codesession', { mode: 'no-cors' }).catch(() => {});
+      } catch (e) {
+        // ignore errors
+      }
+    }
+  }, []);
+
+  const completeOnboarding = useCallback(() => {
+    localStorage.setItem('cs-onboarded', '1');
+    setShowOnboarding(false);
+    // Send initial telemetry ping if just opted in
+    if (localStorage.getItem('cs-telemetry') === '1') {
+      try { fetch('https://api.brianmunene.me/telemetry?tool=codesession', { mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+    }
+  }, []);
 
   // Sync state on browser back/forward
   useEffect(() => {
@@ -73,6 +100,7 @@ export default function App() {
 
   return (
     <div className="app">
+      <Banner />
       <Sidebar page={page} onNavigate={navigate} />
       <main className="main-content">
         {selectedSession !== null ? (
@@ -85,18 +113,17 @@ export default function App() {
           <Insights />
         ) : page === 'alerts' ? (
           <Alerts />
+        ) : page === 'feedback' ? (
+          <Feedback />
+        ) : page === 'share' ? (
+          <ShareCard />
         ) : page === 'donate' ? (
           <Donate />
-        ) : page === 'pricing' ? (
-          <Pricing />
-        ) : page === 'help' ? (
-          <Help />
-        ) : page === 'changelog' ? (
-          <Changelog />
         ) : (
           <ModelBreakdown />
         )}
       </main>
+      {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
     </div>
   );
 }

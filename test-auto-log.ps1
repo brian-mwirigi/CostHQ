@@ -1,4 +1,4 @@
-Set-Location 'C:\Users\Nesh\Desktop\projects\devsession'
+Set-Location (Split-Path -Parent $PSScriptRoot)
 $ErrorActionPreference = 'Continue'
 $passed = 0
 $failed = 0

@@ -4,39 +4,17 @@ import { Session, SessionStats, FileChange, Commit } from './types';
 import { formatDistanceToNow, format } from 'date-fns';
 
 export function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || seconds < 0) return '0s';
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
   
   if (hours > 0) {
     return `${hours}h ${minutes}m`;
   }
-  if (minutes > 0) {
-    return `${minutes}m`;
-  }
-  return `${secs}s`;
+  return `${minutes}m`;
 }
 
 export function formatCost(cost: number): string {
-  if (cost > 0 && cost < 0.01) {
-    return `$${cost.toFixed(4)}`;
-  }
   return `$${cost.toFixed(2)}`;
-}
-
-/** Lightweight relative time (no date-fns dependency). */
-export function formatRelativeTime(date: Date): string {
-  const diff = Date.now() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString();
 }
 
 export function displaySession(session: Session): void {

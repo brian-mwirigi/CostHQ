@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction, Router } from 'express';
 import { join } from 'path';
-import { exec, execSync, execFileSync } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { createServer } from 'net';
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
@@ -9,10 +9,11 @@ import {
   getStats, getActiveSessions,
   getSessionsPaginated, getSessionDetail,
   getDailyCosts, getModelBreakdown, getTopSessions,
-  exportSessions, loadPricing, setPricing, getPricingPath,
+  exportSessions, loadPricing,
   getProviderBreakdown, getFileHotspots, getActivityHeatmap,
   getDailyTokens, getCostVelocity, getProjectBreakdown, getTokenRatios,
   getSession, getCommits, clearAllData,
+  addFeedback, getFeedback,
 } from './db';
 import { getGitDiff, getCommitDiff, getGitDiffStats } from './git';
 
@@ -21,11 +22,6 @@ interface DashboardOptions {
   open?: boolean;
   host?: string;
   json?: boolean;
-}
-
-/** Safely extract an error message from an unknown caught value. */
-function errorMessage(e: unknown): string {
-  return e instanceof Error ? e.message : String(e);
 }
 
 // ── PID file management ────────────────────────────────────
@@ -69,6 +65,11 @@ function killOwnStaleProcess(port: number): boolean {
     let cmdLine = '';
     try {
       if (process.platform === 'win32') {
+        // Validate pid is a safe integer before shell interpolation
+        if (!Number.isInteger(pid) || pid <= 0 || pid > 4194304) {
+          removePidFile(port);
+          return false;
+        }
         cmdLine = execSync(`wmic process where processid=${pid} get commandline`, { timeout: 2000, encoding: 'utf-8' });
       } else {
         cmdLine = readFileSync(`/proc/${pid}/cmdline`, 'utf-8').replace(/\0/g, ' ');
@@ -87,8 +88,7 @@ function killOwnStaleProcess(port: number): boolean {
     }
 
     if (process.platform === 'win32') {
-      // Use execFileSync (no shell) to avoid any command injection risk
-      execFileSync('taskkill', ['/PID', String(pid), '/F'], { timeout: 5000 });
+      execSync(`taskkill /PID ${pid} /F`, { timeout: 5000 });
     } else {
       process.kill(pid, 'SIGTERM');
     }
@@ -106,7 +106,7 @@ function killOwnStaleProcess(port: number): boolean {
 function isPortInUse(port: number): Promise<boolean> {
   return new Promise((resolve) => {
     const tester = createServer()
-      .once('error', (err: NodeJS.ErrnoException) => {
+      .once('error', (err: any) => {
         if (err.code === 'EADDRINUSE') resolve(true);
         else resolve(false);
       })
@@ -119,7 +119,7 @@ function isPortInUse(port: number): Promise<boolean> {
 
 // ── API route builder ──────────────────────────────────────
 
-function buildApiRouter(): Router {
+export function buildApiRouter(): Router {
   const router = Router();
 
   router.get('/stats', (_req, res) => {
@@ -127,20 +127,20 @@ function buildApiRouter(): Router {
       const stats = getStats();
       const active = getActiveSessions();
       res.json({ ...stats, activeSessions: active.length });
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/sessions', (req, res) => {
     try {
-      const limit = Math.max(1, Math.min(parseInt(req.query.limit as string) || 50, 1000));
-      const offset = Math.max(0, parseInt(req.query.offset as string) || 0);
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
       const status = (req.query.status as string) || 'all';
       const search = (req.query.search as string) || '';
       res.json(getSessionsPaginated({ limit, offset, status, search }));
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
@@ -151,8 +151,8 @@ function buildApiRouter(): Router {
       const detail = getSessionDetail(id);
       if (!detail) return res.status(404).json({ error: 'Session not found' });
       res.json(detail);
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
@@ -185,8 +185,8 @@ function buildApiRouter(): Router {
 
       const diff = await getGitDiff(session.gitRoot, session.startGitHead, toSha, filePath || undefined);
       res.type('text/plain').send(diff || '(no changes)');
-    } catch (e: unknown) {
-      res.status(500).json({ error: `Failed to fetch diff: ${errorMessage(e)}` });
+    } catch (e: any) {
+      res.status(500).json({ error: `Failed to fetch diff: ${e.message}` });
     }
   });
 
@@ -214,8 +214,8 @@ function buildApiRouter(): Router {
       const filePath = req.query.file as string | undefined;
       const diff = await getCommitDiff(session.gitRoot, hash, filePath || undefined);
       res.type('text/plain').send(diff || '(no changes)');
-    } catch (e: unknown) {
-      res.status(500).json({ error: `Failed to fetch commit diff: ${errorMessage(e)}` });
+    } catch (e: any) {
+      res.status(500).json({ error: `Failed to fetch commit diff: ${e.message}` });
     }
   });
 
@@ -237,130 +237,101 @@ function buildApiRouter(): Router {
 
       const stats = await getGitDiffStats(session.gitRoot, session.startGitHead, toSha);
       res.json(stats);
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/daily-costs', (req, res) => {
     try {
-      const days = Math.min(parseInt(req.query.days as string) || 30, 365);
+      const days = parseInt(req.query.days as string) || 30;
       res.json(getDailyCosts(days));
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/model-breakdown', (_req, res) => {
     try {
       res.json(getModelBreakdown());
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/top-sessions', (req, res) => {
     try {
-      const limit = Math.max(1, Math.min(parseInt(req.query.limit as string) || 10, 1000));
+      const limit = parseInt(req.query.limit as string) || 10;
       res.json(getTopSessions(limit));
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/provider-breakdown', (_req, res) => {
     try {
       res.json(getProviderBreakdown());
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/file-hotspots', (req, res) => {
     try {
-      const limit = Math.max(1, Math.min(parseInt(req.query.limit as string) || 50, 1000));
+      const limit = parseInt(req.query.limit as string) || 50;
       res.json(getFileHotspots(limit));
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/activity-heatmap', (_req, res) => {
     try {
       res.json(getActivityHeatmap());
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/daily-tokens', (req, res) => {
     try {
-      const days = Math.min(parseInt(req.query.days as string) || 30, 365);
+      const days = parseInt(req.query.days as string) || 30;
       res.json(getDailyTokens(days));
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/cost-velocity', (req, res) => {
     try {
-      const limit = Math.max(1, Math.min(parseInt(req.query.limit as string) || 50, 1000));
+      const limit = parseInt(req.query.limit as string) || 50;
       res.json(getCostVelocity(limit));
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/projects', (_req, res) => {
     try {
       res.json(getProjectBreakdown());
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/token-ratios', (_req, res) => {
     try {
       res.json(getTokenRatios());
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
   router.get('/pricing', (_req, res) => {
     try {
       res.json(loadPricing());
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
-    }
-  });
-
-  router.post('/pricing', (req, res) => {
-    try {
-      const { model, input, output } = req.body;
-      if (!model || typeof input !== 'number' || typeof output !== 'number') {
-        return res.status(400).json({ error: 'model, input, and output are required' });
-      }
-      setPricing(model, input, output);
-      res.json({ ok: true, model, input, output });
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
-    }
-  });
-
-  router.delete('/pricing/:model', (req, res) => {
-    try {
-      // Remove a single custom model override by rewriting the pricing file without it
-      const pricingPath = getPricingPath();
-      let user: Record<string, any> = {};
-      if (existsSync(pricingPath)) {
-        try { user = JSON.parse(readFileSync(pricingPath, 'utf-8')); } catch (_) { user = {}; }
-      }
-      delete user[decodeURIComponent(req.params.model)];
-      writeFileSync(pricingPath, JSON.stringify(user, null, 2));
-      res.json({ ok: true });
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
@@ -374,21 +345,8 @@ function buildApiRouter(): Router {
       res.setHeader('Content-Type', mime);
       res.setHeader('Content-Disposition', `attachment; filename="codesession-export.${ext}"`);
       res.send(data);
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
-    }
-  });
-
-  router.get('/changelog', (_req, res) => {
-    try {
-      const changelogPath = join(__dirname, '..', 'CHANGELOG.md');
-      if (!existsSync(changelogPath)) {
-        return res.status(404).json({ error: 'Changelog not found' });
-      }
-      const content = readFileSync(changelogPath, 'utf-8');
-      res.type('text/plain').send(content);
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
@@ -402,15 +360,44 @@ function buildApiRouter(): Router {
   });
 
   router.post('/reset', (req, res) => {
+    // Require explicit confirmation header to prevent accidental data loss
+    if (req.headers['x-confirm-reset'] !== 'yes') {
+      return res.status(400).json({ error: 'Missing X-Confirm-Reset: yes header. This action permanently deletes all session data.' });
+    }
     try {
-      // Require explicit confirmation to prevent accidental data wipe
-      if (req.query.confirm !== 'true') {
-        return res.status(400).json({ error: 'Add ?confirm=true to confirm permanent deletion of all session data' });
-      }
       clearAllData();
       res.json({ ok: true, message: 'All session data cleared' });
-    } catch (e: unknown) {
-      res.status(500).json({ error: errorMessage(e) });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Feedback ─────────────────────────────────────────────
+
+  router.post('/feedback', (req, res) => {
+    try {
+      const { type, message, email } = req.body || {};
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+      const validTypes = ['feature', 'bug', 'general', 'question'];
+      const feedbackType = validTypes.includes(type) ? type : 'general';
+      const result = addFeedback({
+        type: feedbackType,
+        message: message.trim().slice(0, 5000),
+        email: typeof email === 'string' ? email.trim().slice(0, 200) : undefined,
+      });
+      res.json({ ok: true, id: result.id, timestamp: result.timestamp });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/feedback', (_req, res) => {
+    try {
+      res.json(getFeedback(100));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
     }
   });
 
@@ -459,6 +446,24 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // JSON body limit (4kb -- we only read, but defence-in-depth)
   app.use(express.json({ limit: '4kb' }));
+
+  // ── CSRF protection for mutating endpoints ──────────────
+  // Block cross-origin POST/PUT/DELETE requests to prevent CSRF attacks.
+  // Any website could otherwise POST to http://127.0.0.1:3737/api/v1/reset.
+  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      return next();
+    }
+    const origin = req.headers.origin;
+    const referer = req.headers.referer;
+    // Allow requests with no Origin (curl, Postman, server-to-server)
+    if (!origin && !referer) return next();
+    // Allow same-origin requests
+    const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`, `http://${host}:${port}`];
+    if (origin && allowed.some(a => origin.startsWith(a))) return next();
+    if (referer && allowed.some(a => referer.startsWith(a))) return next();
+    res.status(403).json({ error: 'Cross-origin mutating request blocked (CSRF protection)' });
+  });
 
   // ── Token auth for non-localhost ─────────────────────────
 
@@ -513,17 +518,22 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // Read index.html once; inject token via <meta> tag (avoids CSP script-src issues)
   const indexPath = join(staticDir, 'index.html');
-  let rawHtml: string;
-  try {
-    rawHtml = readFileSync(indexPath, 'utf-8');
-  } catch {
-    console.error(`\n  Dashboard build not found at ${staticDir}.`);
-    console.error('  Run: npm run build:dashboard\n');
-    process.exit(1);
+  let servedHtml: string;
+  if (!existsSync(indexPath)) {
+    // Dashboard UI hasn't been built — serve a helpful error instead of crashing
+    servedHtml = `<!DOCTYPE html><html><head><title>codesession dashboard</title></head><body style="font-family:system-ui;padding:40px;color:#ccc;background:#1a1a2e">
+      <h1>Dashboard not built</h1>
+      <p>Run <code style="color:#00d9ff">npm run build:dashboard</code> first, then restart <code style="color:#00d9ff">cs dashboard</code>.</p>
+    </body></html>`;
+    if (!jsonMode) {
+      console.warn('  Warning: Dashboard UI not found. Run `npm run build:dashboard` first.');
+    }
+  } else {
+    const rawHtml = readFileSync(indexPath, 'utf-8');
+    servedHtml = token
+      ? rawHtml.replace('</head>', `<meta name="cs-token" content="${token}">\n</head>`)
+      : rawHtml;
   }
-  const servedHtml = token
-    ? rawHtml.replace('</head>', `<meta name="cs-token" content="${token}">\n</head>`)
-    : rawHtml;
 
   // Serve index.html for all known SPA routes so client-side routing works on refresh.
   // Using explicit app.get() instead of app.use() catch-all for Express 5 compatibility.
@@ -538,10 +548,6 @@ export function startDashboard(options: DashboardOptions = {}): void {
   app.get('/models', sendSpa);
   app.get('/insights', sendSpa);
   app.get('/alerts', sendSpa);
-  app.get('/donate', sendSpa);
-  app.get('/pricing', sendSpa);
-  app.get('/help', sendSpa);
-  app.get('/changelog', sendSpa);
 
   // ── Port conflict handling & startup ──────────────────────
 
@@ -570,16 +576,19 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
       if (shouldOpen && !jsonMode) {
         const openUrl = token ? `${url}?token=${token}` : url;
-        if (process.platform === 'win32') {
-          exec(`start "" "${openUrl}"`);
-        } else {
-          const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
-          exec(`${cmd} ${JSON.stringify(openUrl)}`);
-        }
+        // Use spawn() with argument array to prevent command injection
+        try {
+          if (process.platform === 'win32') {
+            spawn('cmd', ['/c', 'start', '', openUrl], { detached: true, stdio: 'ignore' }).unref();
+          } else {
+            const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
+            spawn(cmd, [openUrl], { detached: true, stdio: 'ignore' }).unref();
+          }
+        } catch (_) { /* browser open is best-effort */ }
       }
     });
 
-    server.on('error', (err: NodeJS.ErrnoException) => {
+    server.on('error', (err: any) => {
       if (err.code === 'EADDRINUSE') {
         if (jsonMode) {
           console.log(JSON.stringify({ error: 'EADDRINUSE', message: `Port ${port} is in use and could not be freed`, port }));

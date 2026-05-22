@@ -36,7 +36,7 @@ Agent:
   {"schemaVersion":1,"codesessionVersion":"2.0.0","id":2,"sessionId":12,"message":"tests passing, committing","timestamp":"2026-02-09T14:38:22.000Z"}
 
   $ cs end -n "Fixed retry logic, added exponential backoff + 3 tests" --json
-  {"schemaVersion":1,"codesessionVersion":"2.0.0","id":12,"name":"Fix payment retry + tests","status":"completed","startTime":"2026-02-09T14:30:00.000Z","endTime":"2026-02-09T14:39:01.000Z","duration":541,"durationFormatted":"9m","workingDirectory":"/home/user/project","gitRoot":"/home/user/project","filesChanged":3,"commits":[{"hash":"a1b2c3d","message":"fix: exponential backoff retry"}],"aiTokens":26000,"aiCost":0.15,"notes":[{"message":"analyzing existing retry implementation"},{"message":"tests passing, committing"}]}
+  {"schemaVersion":1,"codesessionVersion":"2.0.0","id":12,"name":"Fix payment retry + tests","status":"completed","startTime":"2026-02-09T14:30:00.000Z","endTime":"2026-02-09T14:39:01.000Z","duration":541,"durationFormatted":"9m","workingDirectory":"/home/user/project","gitRoot":"/home/user/project","filesChanged":3,"commits":[{"hash":"a1b2c3d","message":"fix: exponential backoff retry"}],"aiTokens":26000,"aiCost":0.15,"annotations":[{"message":"analyzing existing retry implementation"},{"message":"tests passing, committing"}]}
 
   Done — 9 minutes, 3 files, 1 commit, $0.15 total.
 ```

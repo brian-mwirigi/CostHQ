@@ -6,15 +6,13 @@ interface GitSession {
   git: SimpleGit;
   lastCommitHash: string | null;
   interval?: NodeJS.Timeout;
-  isChecking?: boolean; // guard against concurrent polling runs
 }
 
 const sessions = new Map<number, GitSession>();
 
 export function initGit(sessionId: number, cwd: string): void {
   sessions.set(sessionId, {
-    // 15s timeout prevents git operations from hanging on slow/network file systems
-    git: simpleGit(cwd, { timeout: { block: 15000 } }),
+    git: simpleGit(cwd),
     lastCommitHash: null,
   });
 }
@@ -22,10 +20,7 @@ export function initGit(sessionId: number, cwd: string): void {
 export async function checkForNewCommits(sessionId: number): Promise<void> {
   const session = sessions.get(sessionId);
   if (!session) return;
-  // Prevent duplicate commits from concurrent polling calls
-  if (session.isChecking) return;
 
-  session.isChecking = true;
   try {
     const log = await session.git.log({ maxCount: 1 });
     if (log.latest && log.latest.hash !== session.lastCommitHash) {
@@ -39,13 +34,7 @@ export async function checkForNewCommits(sessionId: number): Promise<void> {
       });
     }
   } catch (error) {
-    // Not a git repo or no commits yet — silently ignore
-    // Log unexpected errors for debugging
-    if (error instanceof Error && !error.message.includes('not a git repository') && !error.message.includes('does not have any commits')) {
-      process.stderr.write(`[codesession] git polling error (session ${sessionId}): ${error.message}\n`);
-    }
-  } finally {
-    session.isChecking = false;
+    // Not a git repo or no commits yet
   }
 }
 
@@ -61,10 +50,6 @@ export async function getGitInfo(sessionId: number): Promise<{ branch: string; h
       hasChanges: !status.isClean(),
     };
   } catch (error) {
-    // Log unexpected git errors (not just "not a git repo")
-    if (error instanceof Error && !error.message.includes('not a git repository')) {
-      process.stderr.write(`[codesession] git info error (session ${sessionId}): ${error.message}\n`);
-    }
     return null;
   }
 }

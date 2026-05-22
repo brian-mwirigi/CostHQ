@@ -34,19 +34,15 @@ export function startWatcher(sessionId: number, cwd: string): void {
   watcher
     .on('add', (path) => handleChange(sessionId, path, cwd, 'created'))
     .on('change', (path) => handleChange(sessionId, path, cwd, 'modified'))
-    .on('unlink', (path) => handleChange(sessionId, path, cwd, 'deleted'))
-    .on('error', (error) => {
-      // Log watcher errors to stderr but don't crash — non-fatal (e.g. ENOSPC, EACCES)
-      process.stderr.write(`[codesession] watcher error (session ${sessionId}): ${error}\n`);
-    });
+    .on('unlink', (path) => handleChange(sessionId, path, cwd, 'deleted'));
 }
 
-export async function stopWatcher(sessionId?: number): Promise<void> {
+export function stopWatcher(sessionId?: number): void {
   if (sessionId !== undefined) {
     // Stop specific session watcher
     const session = sessions.get(sessionId);
     if (session) {
-      await session.watcher.close();
+      session.watcher.close();
       session.changedFiles.clear();
       // Clear all pending timeouts to prevent leaks
       for (const timeout of session.timeouts) {
@@ -58,7 +54,7 @@ export async function stopWatcher(sessionId?: number): Promise<void> {
   } else {
     // Legacy: stop all watchers (for backwards compatibility)
     for (const [id, session] of sessions.entries()) {
-      await session.watcher.close();
+      session.watcher.close();
       session.changedFiles.clear();
       // Clear all pending timeouts to prevent leaks
       for (const timeout of session.timeouts) {
@@ -70,8 +66,8 @@ export async function stopWatcher(sessionId?: number): Promise<void> {
   }
 }
 
-export async function cleanupWatcher(sessionId: number): Promise<void> {
-  await stopWatcher(sessionId);
+export function cleanupWatcher(sessionId: number): void {
+  stopWatcher(sessionId);
 }
 
 function handleChange(
@@ -93,7 +89,7 @@ function handleChange(
   const timeout = setTimeout(() => {
     session.changedFiles.delete(key);
     session.timeouts.delete(timeout);
-  }, 1000);
+  }, 3000);
   session.timeouts.add(timeout);
 
   addFileChange({

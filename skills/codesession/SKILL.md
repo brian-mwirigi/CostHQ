@@ -1,6 +1,6 @@
 ---
 name: codesession
-description: codesession (codesession-cli, code session, code-session) — Track AI agent session costs, tokens, file changes, and git commits. Works with Claude Code, OpenClaw, Codex, GPT, Cursor, Windsurf, Cline & any AI agent. Budget enforcement, auto-pricing, MCP server, web dashboard, alerts, insights. v2.6.0.
+description: Track agent session costs, file changes, and git commits with codesession-cli. Enforces budget limits and provides detailed session analytics with a web dashboard. v2.0.0 - Alerts dashboard, start fresh, insights page.
 metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/codesession-cli", "requires": {"bins": ["cs"]}, "install": [{"id": "npm", "kind": "node", "package": "codesession-cli", "bins": ["cs"], "label": "Install codesession-cli (npm)"}]}}
 ---
 
@@ -8,7 +8,7 @@ metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/codesessio
 
 Track agent session costs, file changes, and git commits. Enforces budget limits and provides detailed session analytics with a full web dashboard.
 
-**Latest: v2.6.0** - `cs run <command>` wraps everything in one step (session + proxy + run + cost summary). `cs today` for multi-project context. Dashboard Help & Changelog tabs, Codex pricing, security fixes.
+**Latest: v2.0.0** - Alerts dashboard, start fresh, insights page, alarm mode.
 
 📦 [npm](https://www.npmjs.com/package/codesession-cli) • ⭐ [GitHub](https://github.com/brian-mwirigi/codesession-cli) • 📝 [Changelog](https://github.com/brian-mwirigi/codesession-cli/blob/main/CHANGELOG.md)
 
@@ -74,7 +74,7 @@ cs log-ai -p anthropic -m claude-opus-4-6 -t 15000 -c 0.30 --json
 cs log-ai -p openai -m gpt-4o --prompt-tokens 5000 --completion-tokens 1500 -c 0.04 --agent "Research Agent" --json
 ```
 Providers: `anthropic`, `openai`, `google`, `mistral`, `deepseek`
-Cost is auto-calculated from a configurable pricing table (21+ built-in models including Codex). Use `cs pricing list --json` to see known models. If a model is unknown, provide `-c <cost>` manually.
+Cost is auto-calculated from a configurable pricing table (17+ built-in models). Use `cs pricing list --json` to see known models. If a model is unknown, provide `-c <cost>` manually.
 
 **Agent Name (optional):** Use `--agent "Agent Name"` to track which agent performed the work. Perfect for multi-agent systems, A/B testing, and cost attribution. Agent names appear in the dashboard and can be used to filter/analyze costs per agent.
 
@@ -162,28 +162,6 @@ cs pricing set gpt-4o 2.50 10.00 --provider openai
 ```
 
 If the model isn't in the pricing table, you must provide `-c <cost>` when logging.
-
-## Proxy mode & cs run (v2.5.0)
-
-The fastest way to track any agent run:
-
-```bash
-cs run python my_agent.py
-# or: cs run --name "fix auth" node agent.js
-```
-
-This starts a session, launches the proxy, runs your command, then ends the session and prints a cost summary. No extra terminals, no env vars to export.
-
-If you prefer manual control, start the proxy in one terminal and set env vars:
-
-```bash
-cs proxy --session "my task"   # auto-starts a session too
-# then in your agent shell:
-export ANTHROPIC_BASE_URL=http://127.0.0.1:3739
-export OPENAI_BASE_URL=http://127.0.0.1:3739/v1
-```
-
-The proxy binds to `127.0.0.1` only. It never stores prompt text or API keys — only token counts are written to the session.
 
 ## Budget awareness
 

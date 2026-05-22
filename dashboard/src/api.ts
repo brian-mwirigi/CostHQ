@@ -25,24 +25,17 @@ export async function fetchApi<T>(path: string, params?: Record<string, string>)
   return res.json();
 }
 
-export async function postApi<T>(path: string, body?: unknown): Promise<T> {
+export async function postApi<T>(path: string, body?: any, extraHeaders?: Record<string, string>): Promise<T> {
   const cleanPath = path.replace(/^\/api\//, '/');
   const url = `${API_BASE}${cleanPath}`;
   const token = getToken();
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...extraHeaders };
   if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(url, { method: 'POST', headers, body: body ? JSON.stringify(body) : undefined });
-  if (!res.ok) throw new Error(`API ${res.status}`);
-  return res.json();
-}
+  
+  const options: RequestInit = { method: 'POST', headers };
+  if (body) options.body = JSON.stringify(body);
 
-export async function deleteApi<T>(path: string): Promise<T> {
-  const cleanPath = path.replace(/^\/api\//, '/');
-  const url = `${API_BASE}${cleanPath}`;
-  const token = getToken();
-  const headers: Record<string, string> = {};
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(url, { method: 'DELETE', headers });
+  const res = await fetch(url, options);
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json();
 }

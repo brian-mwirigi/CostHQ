@@ -1,15 +1,13 @@
 {
   "name": "codesession-cli",
-  "version": "2.6.0",
-  "description": "codesession — Track AI agent costs, tokens, files & commits. Session tracker for Claude Code, OpenClaw, Codex, GPT, Cursor, Windsurf, Cline & any AI agent. Budget enforcement, auto-pricing, MCP server, web dashboard. Also known as codesession-cli, code session, code-session.",
+  "version": "2.1.0",
+  "description": "Track AI agent & coding session costs — files, commits, tokens. Works with OpenClaw, Claude Code, and any AI agent. Includes programmatic API with budget enforcement.",
   "funding": "https://github.com/sponsors/brian-mwirigi",
-  "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
     "codesession": "./dist/index.js",
-    "cs": "./dist/index.js",
-    "codesession-mcp": "./dist/mcp-server.js"
+    "cs": "./dist/index.js"
   },
   "exports": {
     ".": {
@@ -21,6 +19,21 @@
       "types": "./dist/agents.d.ts",
       "import": "./dist/agents.js",
       "require": "./dist/agents.js"
+    },
+    "./wrappers": {
+      "types": "./dist/wrappers.d.ts",
+      "import": "./dist/wrappers.js",
+      "require": "./dist/wrappers.js"
+    },
+    "./middleware": {
+      "types": "./dist/middleware.d.ts",
+      "import": "./dist/middleware.js",
+      "require": "./dist/middleware.js"
+    },
+    "./extensions": {
+      "types": "./dist/extensions.d.ts",
+      "import": "./dist/extensions.js",
+      "require": "./dist/extensions.js"
     }
   },
   "scripts": {
@@ -30,79 +43,45 @@
     "dev": "tsx src/index.ts",
     "dev:dashboard": "npx vite --config dashboard/vite.config.ts",
     "start": "node dist/index.js",
+    "prepare": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "prepare": "npm run build",
     "screenshots": "node scripts/capture-screenshots.js",
     "screenshots:setup": "bash scripts/setup-demo-data.sh || scripts\\setup-demo-data.bat"
   },
   "keywords": [
-    "codesession",
-    "codesession-cli",
-    "code-session",
-    "code session",
     "ai",
-    "ai-agent",
-    "ai-cost",
-    "ai-cost-tracker",
-    "ai-session-tracker",
-    "session-tracker",
-    "cost-tracking",
-    "token-tracking",
-    "token-counter",
-    "token-usage",
     "coding",
     "session",
     "tracker",
-    "budget",
-    "budget-enforcement",
-    "observability",
+    "ai-agent",
     "openclaw",
     "claude-code",
-    "claude",
-    "anthropic",
-    "openai",
-    "codex",
-    "gpt",
-    "gemini",
-    "deepseek",
-    "cursor",
-    "windsurf",
-    "cline",
-    "mcp",
-    "mcp-server",
-    "model-context-protocol",
+    "cost-tracking",
+    "token-tracking",
     "git",
     "cli",
     "agents",
-    "agent-framework",
-    "dashboard",
-    "analytics",
-    "devtools",
-    "developer-tools"
+    "budget",
+    "observability"
   ],
-  "author": "Brian Munene Mwirigi <brian@brianmunene.me> (https://www.brianmunene.me)",
+  "author": "Brian Mwirigi",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
-    "better-sqlite3": "^9.2.2",
+    "better-sqlite3": "^12.9.0",
     "chalk": "^4.1.2",
     "chokidar": "^3.5.3",
     "cli-table3": "^0.6.3",
     "commander": "^11.1.0",
     "date-fns": "^3.0.6",
     "express": "^5.2.1",
-    "simple-git": "^3.22.0",
-    "zod": "^4.3.6"
+    "simple-git": "^3.22.0"
   },
   "files": [
     "dist",
     "skills",
-    "plugin",
-    ".claude-plugin",
     "README.md",
-    "CHANGELOG.md",
     "LICENSE"
   ],
   "devDependencies": {
@@ -113,7 +92,6 @@
     "@types/react-dom": "^19.2.3",
     "@types/supertest": "^7.2.0",
     "@vitejs/plugin-react": "^5.1.3",
-    "@vitest/coverage-v8": "^4.0.18",
     "puppeteer": "^22.0.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -122,20 +100,9 @@
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^7.3.1",
-    "vitest": "^4.0.18"
+    "vitest": "^4.1.5"
   },
   "engines": {
-    "node": ">=18.0.0"
-  },
-  "publishConfig": {
-    "registry": "https://registry.npmjs.org/"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/brian-mwirigi/codesession-cli.git"
-  },
-  "bugs": {
-    "url": "https://github.com/brian-mwirigi/codesession-cli/issues"
-  },
-  "homepage": "https://github.com/brian-mwirigi/codesession-cli#readme"
+    "node": ">=16.0.0"
+  }
 }

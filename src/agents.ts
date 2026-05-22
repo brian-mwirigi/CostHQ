@@ -133,11 +133,29 @@ export class AgentSession {
 
     // Check budget BEFORE writing to database
     const newTotalCost = this.totalCost + cost;
-    if (this.config.budget !== undefined && newTotalCost > this.config.budget) {
+    if (this.config.budget !== undefined && newTotalCost >= this.config.budget) {
+      // Write the usage to DB since it's the last allowed call, then end the session
+      addAIUsage({
+        sessionId: this.sessionId!,
+        provider,
+        model,
+        tokens,
+        promptTokens: options?.promptTokens,
+        completionTokens: options?.completionTokens,
+        cost,
+        agentName: options?.agentName,
+        timestamp: new Date().toISOString(),
+      });
+
+      this.totalCost = newTotalCost;
+      this.totalTokens += tokens;
+
       if (this.config.onBudgetExceeded) {
         this.config.onBudgetExceeded(newTotalCost, this.config.budget);
       }
-      // Don't write this usage to DB - budget already exceeded
+
+      // End session before throwing so there's no orphaned active session
+      this.end(`Budget reached: $${newTotalCost.toFixed(2)} / $${this.config.budget.toFixed(2)}`);
       throw new BudgetExceededError(newTotalCost, this.config.budget);
     }
 
@@ -160,11 +178,6 @@ export class AgentSession {
     // Notify callback
     if (this.config.onAIUsage) {
       this.config.onAIUsage(cost, this.totalCost, model);
-    }
-
-    // Auto-end session if budget exactly met or exceeded
-    if (this.config.budget !== undefined && this.totalCost >= this.config.budget) {
-      this.end(`Budget reached: $${this.totalCost.toFixed(2)} / $${this.config.budget.toFixed(2)}`);
     }
 
     return this.config.budget !== undefined
@@ -208,7 +221,7 @@ export class AgentSession {
     this.assertStarted();
 
     // Stop tracking
-    void stopWatcher(this.sessionId!);
+    stopWatcher(this.sessionId!);
     stopGitPolling(this.sessionId!);
     cleanupGit(this.sessionId!);
 
@@ -330,12 +343,25 @@ export async function runAgentSession(
     await agentFn(session);
   } catch (error) {
     if (error instanceof BudgetExceededError) {
-      // Budget exceeded — session may still be active (throw happens before DB write).
-      // End it cleanly so watcher/git resources are released.
-      if (session.isActive) {
-        session.end(`Budget exceeded: $${(error as BudgetExceededError).spent.toFixed(2)} / $${(error as BudgetExceededError).budget.toFixed(2)}`);
+      // Session already ended by logAI, return summary from DB
+      const dbSession = getSession(session.id!);
+      if (!dbSession) {
+        // Shouldn't happen, but guard against it
+        return {
+          sessionId: session.id!,
+          name,
+          duration: 0,
+          filesChanged: 0,
+          commits: 0,
+          aiCost: 0,
+          aiTokens: 0,
+          budgetRemaining: 0,
+          files: [],
+          commitList: [],
+          aiUsageBreakdown: [],
+          metadata: config.metadata,
+        };
       }
-      const dbSession = getSession(session.id!)!;
       const files = getFileChanges(session.id!);
       const commits = getCommits(session.id!);
       const aiUsage = getAIUsage(session.id!);

@@ -66,10 +66,8 @@ export default function Insights() {
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [pricing, setPricing] = useState<PricingMap>({});
   const [tab, setTab] = useState<'hotspots' | 'heatmap' | 'projects' | 'pricing'>('hotspots');
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
+  const [isPro, setIsPro] = useState(false);
+  const [licenseKey, setLicenseKey] = useState('');
 
   const fetchAll = useCallback(() => {
     fetchApi<FileHotspot[]>('/api/file-hotspots').then(setHotspots);
@@ -78,7 +76,34 @@ export default function Insights() {
     fetchApi<PricingMap>('/api/pricing').then(setPricing);
   }, []);
 
+  useEffect(() => {
+    if (localStorage.getItem('cs-pro-key')) {
+      setIsPro(true);
+    }
+    fetchAll();
+  }, [fetchAll]);
+
   useInterval(fetchAll, 30_000);
+
+  const [isValidating, setIsValidating] = useState(false);
+  const [error, setError] = useState('');
+
+  const unlockPro = () => {
+    if (!licenseKey.trim()) return;
+    setIsValidating(true);
+    setError('');
+    
+    // Simulate network validation
+    setTimeout(() => {
+      if (licenseKey.trim().toUpperCase().startsWith('CS-PRO-')) {
+        localStorage.setItem('cs-pro-key', licenseKey.trim().toUpperCase());
+        setIsPro(true);
+      } else {
+        setError('Invalid license key. Please check your purchase email.');
+      }
+      setIsValidating(false);
+    }, 800);
+  };
 
   const tabs = [
     { key: 'hotspots' as const, label: 'File Hotspots', icon: <IconTarget size={14} />, count: hotspots.length },
@@ -107,7 +132,7 @@ export default function Insights() {
     }));
 
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative' }}>
       <div className="page-header">
         <h1 className="page-title">Insights</h1>
         <div className="page-subtitle">Deep analytics across all sessions</div>
@@ -126,6 +151,115 @@ export default function Insights() {
         ))}
       </div>
 
+      {!isPro && (
+        <div style={{
+          position: 'absolute',
+          top: 150,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 10,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'rgba(9, 9, 11, 0.7)',
+          backdropFilter: 'blur(8px)',
+          borderRadius: 12
+        }}>
+          <div style={{
+            background: 'var(--bg-root)',
+            padding: '32px 40px',
+            borderRadius: '12px',
+            border: '1px solid var(--border)',
+            boxShadow: '0 16px 48px rgba(0,0,0,0.4)',
+            textAlign: 'center',
+            maxWidth: '440px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: '50%',
+              background: 'var(--bg-surface)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 20px',
+              border: '1px solid var(--border)'
+            }}>
+              <IconZap size={20} color="var(--text-primary)" />
+            </div>
+
+            <h2 style={{ 
+              margin: '0 0 12px', 
+              fontSize: '20px', 
+              fontWeight: 600,
+              color: 'var(--text-primary)'
+            }}>
+              Unlock Advanced Insights
+            </h2>
+            
+            <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.5, marginBottom: '28px' }}>
+              Upgrade to Codesession Pro to access detailed file hotspots, activity heatmaps, and project cost breakdowns.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                type="text" 
+                placeholder="Enter license key (e.g. CS-PRO-1234)" 
+                value={licenseKey}
+                onChange={e => { setLicenseKey(e.target.value); setError(''); }}
+                disabled={isValidating}
+                style={{
+                  width: '100%',
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  outline: 'none',
+                  fontSize: '14px',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {error && <div style={{ color: '#f85149', fontSize: '13px', textAlign: 'left', marginTop: '-4px' }}>{error}</div>}
+              <button 
+                onClick={unlockPro}
+                disabled={isValidating || !licenseKey.trim()}
+                style={{
+                  width: '100%',
+                  background: 'var(--text-primary)',
+                  color: 'var(--bg-root)',
+                  border: 'none',
+                  padding: '10px 16px',
+                  borderRadius: '6px',
+                  cursor: (isValidating || !licenseKey.trim()) ? 'not-allowed' : 'pointer',
+                  fontWeight: 600,
+                  fontSize: '14px',
+                  opacity: (isValidating || !licenseKey.trim()) ? 0.7 : 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
+                }}
+              >
+                {isValidating ? 'Validating...' : 'Unlock Pro'}
+              </button>
+            </div>
+            
+            <div style={{ marginTop: '24px', fontSize: '13px' }}>
+              <span style={{ color: 'var(--text-tertiary)' }}>Don't have a key? </span>
+              <a href="#" style={{ color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                Get one here &rarr;
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ filter: isPro ? 'none' : 'blur(8px)', opacity: isPro ? 1 : 0.6, pointerEvents: isPro ? 'auto' : 'none', transition: 'filter 0.3s' }}>
       {tab === 'hotspots' && (
         <div className="card">
           <div className="card-header">
@@ -322,6 +456,7 @@ export default function Insights() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -178,6 +178,8 @@ export default function SessionDetail({ sessionId, onBack }: Props) {
         {tabs.map(t => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             className={`tab-btn${tab === t.key ? ' tab-btn--active' : ''}`}
             onClick={() => setTab(t.key)}
           >
@@ -264,8 +266,8 @@ function FilesTable({ files, sessionId }: { files: FileChange[]; sessionId: numb
     try {
       const text = await fetchDiff(sessionId, filePath);
       setDiffText(text);
-    } catch (err: unknown) {
-      setDiffText(`(failed to load diff: ${err instanceof Error ? err.message : 'unknown error'})`);
+    } catch (err: any) {
+      setDiffText(`(failed to load diff: ${err.message || 'unknown error'})`);
     }
     setLoading(false);
   }, [expandedFile, sessionId]);
@@ -319,7 +321,10 @@ function FilesTable({ files, sessionId }: { files: FileChange[]; sessionId: numb
               <>
                 <tr key={i} className="clickable-row" onClick={() => toggleDiff(f.filePath)} title="Click to view diff">
                   <td className="mono ellipsis" title={f.filePath}>
-                    <span className="diff-toggle">{expandedFile === f.filePath ? '\u25BC' : '\u25B6'}</span>
+                    <span className="diff-toggle" aria-hidden="true">{expandedFile === f.filePath ? '\u25BC' : '\u25B6'}</span>
+                    <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)' }}>
+                      {expandedFile === f.filePath ? 'Collapse diff' : 'Expand diff'}
+                    </span>
                     {' '}{dir && <span className="file-dir">{dir}</span>}<strong>{name}</strong>
                   </td>
                   <td><span className={`badge badge-file-${f.changeType}`}>{f.changeType}</span></td>
@@ -373,8 +378,8 @@ function CommitsTable({ commits, sessionId }: { commits: Commit[]; sessionId: nu
     try {
       const text = await fetchCommitDiff(sessionId, hash);
       setDiffText(text);
-    } catch (err: unknown) {
-      setDiffText(`(failed to load diff: ${err instanceof Error ? err.message : 'unknown error'})`);
+    } catch (err: any) {
+      setDiffText(`(failed to load diff: ${err.message || 'unknown error'})`);
     }
     setLoading(false);
   }, [expandedHash, sessionId]);
@@ -394,7 +399,10 @@ function CommitsTable({ commits, sessionId }: { commits: Commit[]; sessionId: nu
           <>
             <tr key={i} className="clickable-row" onClick={() => toggleDiff(c.hash)} title="Click to view diff">
               <td className="mono hash">
-                <span className="diff-toggle">{expandedHash === c.hash ? '\u25BC' : '\u25B6'}</span>
+                <span className="diff-toggle" aria-hidden="true">{expandedHash === c.hash ? '\u25BC' : '\u25B6'}</span>
+                <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0, 0, 0, 0)' }}>
+                  {expandedHash === c.hash ? 'Collapse diff' : 'Expand diff'}
+                </span>
                 {' '}{c.hash.slice(0, 7)}
               </td>
               <td className="ellipsis" title={c.message}>{c.message}</td>

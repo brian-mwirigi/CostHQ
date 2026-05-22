@@ -35,6 +35,6 @@ export function formatDate(dateStr: string): string {
 }
 
 export function formatDay(dateStr: string): string {
-  const d = new Date(dateStr + 'T00:00:00');
+  const d = new Date(dateStr + 'T12:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }

@@ -1,4 +1,4 @@
-/** Inline SVG icons — no emoji, no external deps. Stroke-based, 24x24 viewBox. */
+/** Inline SVG icons — no emoji, no external deps. Stroke-based, 20x20 viewBox. */
 
 interface IconProps {
   size?: number;
@@ -227,36 +227,11 @@ export function IconHeart(p: IconProps) {
   return svg('M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z', p);
 }
 
-export function IconTag(p: IconProps) {
-  return svgMulti([
-    'M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z',
-    'M7 7h.01',
-  ], p);
-}
-
 export function IconCpu(p: IconProps) {
   return svgMulti([
     'M18 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z',
     'M9 9h6v6H9z',
     'M9 1v3', 'M15 1v3', 'M9 20v3', 'M15 20v3',
     'M20 9h3', 'M20 14h3', 'M1 9h3', 'M1 14h3',
-  ], p);
-}
-
-export function IconHelpCircle(p: IconProps) {
-  return svgMulti([
-    'M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0-20 0',
-    'M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3',
-    'M12 17h.01',
-  ], p);
-}
-
-export function IconFileText(p: IconProps) {
-  return svgMulti([
-    'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z',
-    'M14 2v6h6',
-    'M16 13H8',
-    'M16 17H8',
-    'M10 9H8',
   ], p);
 }
