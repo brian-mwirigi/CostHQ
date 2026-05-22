@@ -16,8 +16,8 @@ inputs:
     default: 'CI-Run'
 
 runs:
-  using: 'node20'
-  main: 'dist/action.js'
+  using: 'docker'
+  image: 'Dockerfile'
 
 branding:
   icon: 'dollar-sign'
