@@ -70,10 +70,9 @@
   "author": "Brian Mwirigi",
   "license": "MIT",
   "dependencies": {
-    "@actions/core": "^3.0.1",
-    "@actions/exec": "^3.0.0",
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1",
     "@supabase/supabase-js": "^2.106.1",
-    "puppeteer": "^22.8.0",
     "better-sqlite3": "^12.9.0",
     "chalk": "^4.1.2",
     "chokidar": "^3.5.3",
@@ -81,6 +80,7 @@
     "commander": "^11.1.0",
     "date-fns": "^3.0.6",
     "express": "^5.2.1",
+    "puppeteer": "^22.8.0",
     "simple-git": "^3.22.0"
   },
   "files": [
@@ -97,7 +97,9 @@
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@types/supertest": "^7.2.0",
+    "@vercel/ncc": "^0.38.4",
     "@vitejs/plugin-react": "^5.1.3",
+    "@vitest/coverage-v8": "^4.1.7",
     "puppeteer": "^22.15.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
