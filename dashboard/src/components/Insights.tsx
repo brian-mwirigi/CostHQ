@@ -3,6 +3,8 @@ import { fetchApi } from '../api';
 import { useInterval } from '../hooks/useInterval';
 import { formatCost, formatTokens } from '../utils/format';
 import { IconTarget, IconZap, IconCpu, IconBarChart, IconFolder } from './Icons';
+import { useLicense } from '../../../pro/dashboard/LicenseContext';
+import UpgradePrompt from '../../../pro/dashboard/UpgradePrompt';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
@@ -61,15 +63,12 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function Insights() {
+  const { isPro } = useLicense();
   const [hotspots, setHotspots] = useState<FileHotspot[]>([]);
   const [heatmap, setHeatmap] = useState<HeatmapCell[]>([]);
   const [projects, setProjects] = useState<ProjectRow[]>([]);
   const [pricing, setPricing] = useState<PricingMap>({});
   const [tab, setTab] = useState<'hotspots' | 'heatmap' | 'projects' | 'pricing'>('hotspots');
-
-  useEffect(() => {
-    fetchAll();
-  }, []);
 
   const fetchAll = useCallback(() => {
     fetchApi<FileHotspot[]>('/api/file-hotspots').then(setHotspots);
@@ -77,6 +76,10 @@ export default function Insights() {
     fetchApi<ProjectRow[]>('/api/projects').then(setProjects);
     fetchApi<PricingMap>('/api/pricing').then(setPricing);
   }, []);
+
+  useEffect(() => {
+    if (isPro) fetchAll();
+  }, [fetchAll, isPro]);
 
   useInterval(fetchAll, 30_000);
 
@@ -106,8 +109,17 @@ export default function Insights() {
       sessions: p.sessions,
     }));
 
+  if (!isPro) {
+    return (
+      <UpgradePrompt 
+        feature="Insights" 
+        description="Unlock file hotspots, activity heatmaps, project breakdowns, and custom pricing models."
+      />
+    );
+  }
+
   return (
-    <div className="page">
+    <div className="page" style={{ position: 'relative' }}>
       <div className="page-header">
         <h1 className="page-title">Insights</h1>
         <div className="page-subtitle">Deep analytics across all sessions</div>
@@ -126,6 +138,7 @@ export default function Insights() {
         ))}
       </div>
 
+      <div>
       {tab === 'hotspots' && (
         <div className="card">
           <div className="card-header">
@@ -322,6 +335,7 @@ export default function Insights() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

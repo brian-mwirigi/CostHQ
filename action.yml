@@ -1,0 +1,24 @@
+name: 'Codesession Budget Breaker'
+description: 'Runs AI agents in CI and fails the build if they exceed a set cost limit'
+author: 'Brian Mwirigi'
+
+inputs:
+  command:
+    description: 'The agent or script command to execute (e.g. "npm run my-agent" or "python script.py")'
+    required: true
+  budget_limit:
+    description: 'The maximum allowed AI API cost in dollars (e.g. "0.50"). Defaults to $1.00.'
+    required: false
+    default: '1.00'
+  name:
+    description: 'Name for the session'
+    required: false
+    default: 'CI-Run'
+
+runs:
+  using: 'node20'
+  main: 'dist/action.js'
+
+branding:
+  icon: 'dollar-sign'
+  color: 'blue'

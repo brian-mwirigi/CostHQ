@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useLicense } from '../../../pro/dashboard/LicenseContext';
+import UpgradePrompt from '../../../pro/dashboard/UpgradePrompt';
 import { fetchApi } from '../api';
 import { useInterval } from '../hooks/useInterval';
 import { formatCost } from '../utils/format';
@@ -214,6 +216,7 @@ function AlarmToggle({ alarm, onToggle }: { alarm: boolean; onToggle: () => void
 // ── Component ────────────────────────────────────────
 
 export default function Alerts() {
+  const { isPro } = useLicense();
   const [stats, setStats] = useState<Stats | null>(null);
   const [daily, setDaily] = useState<DailyCost[]>([]);
   const [top, setTop] = useState<TopSession[]>([]);
@@ -238,7 +241,7 @@ export default function Alerts() {
   // already exceeded before the user opened the page). Only NEW breaches
   // detected on subsequent poll cycles trigger alarms.
   useEffect(() => {
-    if (!stats) return; // wait for data
+    if (!stats || !isPro) return; // wait for data
 
     if (firedRef.current === null) {
       // First load — record all current alerts as already-known, don't fire
@@ -260,7 +263,7 @@ export default function Alerts() {
         firedRef.current.delete(key);
       }
     }
-  }, [stats, daily, top, thresholds, alerts]);
+  }, [stats, daily, top, thresholds, alerts, isPro]);
 
   const updateLimit = (key: keyof Thresholds, value: string) => {
     const num = parseFloat(value) || 0;
@@ -287,6 +290,15 @@ export default function Alerts() {
       firedRef.current?.delete(alertKey);
     }
   };
+
+  if (!isPro) {
+    return (
+      <UpgradePrompt 
+        feature="Alerts" 
+        description="Set custom budget thresholds and receive browser and sound notifications when you exceed them."
+      />
+    );
+  }
 
   const enabledCount = [thresholds.dailyCost, thresholds.totalCost, thresholds.sessionCost].filter(v => v.limit > 0).length;
   const alarmCount = [thresholds.dailyCost, thresholds.totalCost, thresholds.sessionCost].filter(v => v.limit > 0 && v.alarm).length;

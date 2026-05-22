@@ -6,9 +6,14 @@ import SessionDetail from './components/SessionDetail';
 import ModelBreakdown from './components/ModelBreakdown';
 import Insights from './components/Insights';
 import Alerts from './components/Alerts';
-import Donate from './components/Donate';
+import LicenseSettings from '../../pro/dashboard/LicenseSettings';
+import Feedback from './components/Feedback';
+import ShareCard from './components/ShareCard';
+import Onboarding from './components/Onboarding';
+import Banner from './components/Banner';
+import { LicenseProvider } from '../../pro/dashboard/LicenseContext';
 
-export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'donate';
+export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'feedback' | 'share';
 
 // ── URL-based routing (no react-router needed) ─────────────
 
@@ -22,7 +27,9 @@ function parseRoute(): { page: Page; sessionId: number | null } {
   if (path === '/models') return { page: 'models', sessionId: null };
   if (path === '/insights') return { page: 'insights', sessionId: null };
   if (path === '/alerts') return { page: 'alerts', sessionId: null };
-  if (path === '/donate') return { page: 'donate', sessionId: null };
+  if (path === '/upgrade') return { page: 'upgrade', sessionId: null };
+  if (path === '/feedback') return { page: 'feedback', sessionId: null };
+  if (path === '/share') return { page: 'share', sessionId: null };
   return { page: 'overview', sessionId: null };
 }
 
@@ -36,6 +43,24 @@ export default function App() {
   const initial = parseRoute();
   const [page, setPage] = useState<Page>(initial.page);
   const [selectedSession, setSelectedSession] = useState<number | null>(initial.sessionId);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem('cs-onboarded')) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!localStorage.getItem('cs-onboarded')) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const completeOnboarding = useCallback(() => {
+    localStorage.setItem('cs-onboarded', '1');
+    setShowOnboarding(false);
+  }, []);
 
   // Sync state on browser back/forward
   useEffect(() => {
@@ -66,7 +91,9 @@ export default function App() {
   }, []);
 
   return (
-    <div className="app">
+    <LicenseProvider>
+      <div className="app">
+        <Banner />
       <Sidebar page={page} onNavigate={navigate} />
       <main className="main-content">
         {selectedSession !== null ? (
@@ -79,12 +106,18 @@ export default function App() {
           <Insights />
         ) : page === 'alerts' ? (
           <Alerts />
-        ) : page === 'donate' ? (
-          <Donate />
+        ) : page === 'feedback' ? (
+          <Feedback />
+        ) : page === 'share' ? (
+          <ShareCard />
+        ) : page === 'upgrade' ? (
+          <LicenseSettings />
         ) : (
           <ModelBreakdown />
         )}
       </main>
+      {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
     </div>
+    </LicenseProvider>
   );
 }

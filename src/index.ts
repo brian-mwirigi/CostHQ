@@ -25,6 +25,9 @@ import {
   addNote,
   getNotes,
   recoverStaleSessions,
+  addFeedback,
+  setConfig,
+  getConfig
 } from './db';
 import { initGit, startGitPolling, stopGitPolling, checkForNewCommits, getGitInfo, cleanupGit, getGitRoot, getGitHead, getGitDiffFiles, getGitLogCommits } from './git';
 import { startWatcher, stopWatcher, cleanupWatcher } from './watcher';
@@ -36,6 +39,8 @@ import {
   displayCommits
 } from './formatters';
 import { formatDuration, formatCost } from './formatters';
+import { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/src/license';
+import { requirePro } from '../pro/src/gates';
 
 const program = new Command();
 const pkg = require('../package.json');
@@ -340,8 +345,40 @@ program
         console.log(chalk.green('\nSession ended\n'));
         displaySession(updated);
       }
+      
+      // Fire webhook alert
+      fireWebhook(updated);
     }
   });
+
+// ─── Webhook Helper ────────────────────────────────────────────
+
+async function fireWebhook(session: any) {
+  const url = getConfig('webhook_url');
+  if (!url) return;
+  try {
+    const payload = {
+      content: `Session **${session.name}** ended.`,
+      embeds: [{
+        title: 'Session Summary',
+        color: 0x3b82f6,
+        fields: [
+          { name: 'Duration', value: formatDuration(session.duration), inline: true },
+          { name: 'Cost', value: '$' + (session.aiCost || 0).toFixed(4), inline: true },
+          { name: 'Files Changed', value: String(session.filesChanged || 0), inline: true },
+          { name: 'Commits', value: String(session.commits || 0), inline: true },
+        ]
+      }]
+    };
+    await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+  } catch (e) {
+    // Silently fail webhook errors
+  }
+}
 
 // ─── Show ──────────────────────────────────────────────────────
 
@@ -587,13 +624,30 @@ program
 
 program
   .command('export')
-  .description('Export sessions as JSON or CSV')
-  .option('-f, --format <format>', 'Output format: json or csv', 'json')
-  .option('-l, --limit <n>', 'Number of sessions to export', parseInt)
-  .action((options) => {
-    const format = options.format === 'csv' ? 'csv' : 'json';
-    const output = exportSessions(format, options.limit);
-    console.log(output);
+  .description('Export sessions as JSON, CSV, or a PDF receipt')
+  .argument('[id]', 'Session ID (required for PDF export)')
+  .option('-f, --format <format>', 'Output format: json, csv, or pdf', 'json')
+  .option('-l, --limit <n>', 'Number of sessions to export (JSON/CSV)', parseInt)
+  .action((id: string | undefined, options) => {
+    if (options.format === 'pdf') {
+      if (!id) {
+        console.log(chalk.red('You must specify a session ID to export as PDF (e.g., cs export 123 --format pdf)'));
+        return;
+      }
+      const { exportSessionToPDF } = require('./pdf-export');
+      exportSessionToPDF(parseInt(id, 10));
+    } else {
+      const format = options.format === 'csv' ? 'csv' : 'json';
+      const output = exportSessions(format, options.limit);
+      console.log(output);
+      
+      const license = getLicense();
+      if (license.valid && license.plan !== 'free') {
+        console.log(chalk.gray(`Plan: ${license.plan.toUpperCase()} (${license.email})`));
+      } else {
+        console.log(chalk.gray(`Plan: Free | Upgrade to Pro: https://codesession.dev/pro`));
+      }
+    }
   });
 
 // ─── Pricing ────────────────────────────────────────────────
@@ -709,6 +763,24 @@ program
     }
   });
 
+// ─── Feedback ───────────────────────────────────────────────────
+
+program
+  .command('feedback <message>')
+  .description('Submit feedback or feature requests')
+  .option('-t, --type <type>', 'Feedback type: feature, bug, general, question', 'general')
+  .option('--json', 'JSON output')
+  .action((message: string, options: any) => {
+    const result = addFeedback({ type: options.type, message });
+    if (options.json) {
+      console.log(JSON.stringify(jsonWrap({ ok: true, id: result.id, type: options.type, message, timestamp: result.timestamp })));
+    } else {
+      console.log(chalk.green(`\nFeedback submitted! (id: ${result.id})`));
+      console.log(chalk.gray(`  Type: ${options.type}`));
+      console.log(chalk.gray(`  Message: ${message}\n`));
+    }
+  });
+
 program
   .command('dashboard')
   .description('Open the web dashboard')
@@ -734,6 +806,10 @@ program
     const path = require('path');
     const os = require('os');
     const tty = require('tty');
+
+    if (!requirePro('Auto-log (Claude Code Integration)')) {
+      process.exit(0);
+    }
 
     // Bail if stdin is a TTY (user ran `cs auto-log` manually without piping)
     try {
@@ -855,6 +931,130 @@ program
     })));
   });
 
+// ─── License ───────────────────────────────────────────────────
+
+program
+  .command('activate <key>')
+  .description('Activate a Pro or Enterprise license key')
+  .option('--json', 'JSON output')
+  .action((key: string, options: any) => {
+    const result = activateLicense(key);
+    if (options.json) {
+      console.log(JSON.stringify(jsonWrap(result)));
+    } else if (result.success) {
+      console.log(chalk.green(`\nLicense activated successfully!`));
+      console.log(chalk.gray(`  Plan:  ${result.license?.plan.toUpperCase()}`));
+      console.log(chalk.gray(`  Email: ${result.license?.email}`));
+      if (result.license?.plan === 'enterprise') {
+        console.log(chalk.gray(`  Seats: ${result.license?.seats}`));
+      }
+      console.log();
+    } else {
+      console.log(chalk.red(`\nActivation failed: ${result.error}\n`));
+    }
+  });
+
+program
+  .command('deactivate')
+  .description('Remove the current license key')
+  .option('--json', 'JSON output')
+  .action((options: any) => {
+    deactivateLicense();
+    if (options.json) {
+      console.log(JSON.stringify(jsonWrap({ success: true })));
+    } else {
+      console.log(chalk.green(`\nLicense deactivated. You are now on the Free plan.\n`));
+    }
+  });
+
+program
+  .command('license')
+  .description('Show current license status')
+  .option('--json', 'JSON output')
+  .action((options: any) => {
+    const info = getLicense();
+    if (options.json) {
+      console.log(JSON.stringify(jsonWrap(info)));
+    } else {
+      console.log(chalk.green(`\nLicense Status:`));
+      console.log(chalk.gray(`  Plan:   ${info.plan.toUpperCase()}`));
+      if (info.valid) {
+        console.log(chalk.gray(`  Email:  ${info.email}`));
+        if (info.plan === 'enterprise') {
+          console.log(chalk.gray(`  Seats:  ${info.seats}`));
+        }
+      } else if (info.trial.active) {
+        console.log(chalk.yellow(`  Trial:  ${info.trial.daysRemaining} days remaining`));
+      }
+    }
+  });
+
+// ─── Proxy ─────────────────────────────────────────────────────
+
+const proxyCmd = program.command('proxy').description('Manage the Semantic Caching Proxy');
+
+proxyCmd
+  .command('start')
+  .description('Start the local Semantic Caching Proxy firewall')
+  .option('-p, --port <number>', 'Port to listen on', '3739')
+  .action((options) => {
+    // Lazy require to avoid slowing down other commands
+    const { startProxy } = require('./proxy');
+    startProxy(parseInt(options.port, 10));
+  });
+
+// ─── Config ────────────────────────────────────────────────────
+
+const configCmd = program.command('config').description('Manage CLI configuration');
+
+configCmd
+  .command('set <key> <value>')
+  .description('Set a configuration value (e.g., webhook_url)')
+  .action((key, value) => {
+    setConfig(key, value);
+    console.log(chalk.green(`\nSet ${key} to ${value}\n`));
+  });
+
+configCmd
+  .command('get <key>')
+  .description('Get a configuration value')
+  .action((key) => {
+    const val = getConfig(key);
+    if (val) {
+      console.log(val);
+    } else {
+      console.log(chalk.yellow(`No config found for key: ${key}`));
+    }
+  });
+
+// ─── Cloud Sync (Pro) ──────────────────────────────────────────
+
+const cloudCmd = program.command('cloud').description('Manage Supabase Cloud Sync (Pro Feature)');
+
+cloudCmd
+  .command('login <email>')
+  .description('Login to Supabase Cloud via Magic Link')
+  .action((email) => {
+    const { loginToCloud } = require('../pro/src/sync');
+    loginToCloud(email);
+  });
+
+cloudCmd
+  .command('verify <token>')
+  .description('Verify magic link token')
+  .action((token) => {
+    const { verifyCloudToken } = require('../pro/src/sync');
+    verifyCloudToken(token);
+  });
+
+cloudCmd
+  .command('sync')
+  .description('Sync local sessions to Supabase Cloud')
+  .action(() => {
+    const { syncSessionsToCloud } = require('../pro/src/sync');
+    syncSessionsToCloud();
+  });
+
 // Only parse CLI args when run directly (not when imported as a library)
 if (require.main === module) {
   program.parse();
@@ -866,3 +1066,4 @@ export { initGit, startGitPolling, stopGitPolling, checkForNewCommits, getGitInf
 export { startWatcher, stopWatcher, cleanupWatcher } from './watcher';
 export { Session, FileChange, Commit, AIUsage, SessionStats, SessionNote } from './types';
 export { AgentSession, AgentSessionConfig, AgentSessionSummary, BudgetExceededError, runAgentSession } from './agents';
+export { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/src/license';

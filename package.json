@@ -1,24 +1,40 @@
 {
   "name": "codesession-cli",
-  "version": "2.1.0",
-  "description": "Track AI agent & coding session costs — files, commits, tokens. Works with OpenClaw, Claude Code, and any AI agent. Includes programmatic API with budget enforcement.",
+  "version": "2.2.0",
+  "description": "Track AI agent & coding session costs — files, commits, tokens. Free & Pro tiers available. Works with Claude Code and any AI agent.",
+  "homepage": "https://codesession.dev",
   "funding": "https://github.com/sponsors/brian-mwirigi",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "bin": {
-    "codesession": "./dist/index.js",
-    "cs": "./dist/index.js"
+    "codesession": "dist/src/index.js",
+    "cs": "dist/src/index.js"
   },
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.js"
+      "types": "./dist/src/index.d.ts",
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js"
     },
     "./agents": {
-      "types": "./dist/agents.d.ts",
-      "import": "./dist/agents.js",
-      "require": "./dist/agents.js"
+      "types": "./dist/src/agents.d.ts",
+      "import": "./dist/src/agents.js",
+      "require": "./dist/src/agents.js"
+    },
+    "./wrappers": {
+      "types": "./dist/src/wrappers.d.ts",
+      "import": "./dist/src/wrappers.js",
+      "require": "./dist/src/wrappers.js"
+    },
+    "./middleware": {
+      "types": "./dist/src/middleware.d.ts",
+      "import": "./dist/src/middleware.js",
+      "require": "./dist/src/middleware.js"
+    },
+    "./extensions": {
+      "types": "./dist/src/extensions.d.ts",
+      "import": "./dist/src/extensions.js",
+      "require": "./dist/src/extensions.js"
     }
   },
   "scripts": {
@@ -29,6 +45,9 @@
     "dev:dashboard": "npx vite --config dashboard/vite.config.ts",
     "start": "node dist/index.js",
     "prepare": "npm run build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "screenshots": "node scripts/capture-screenshots.js",
     "screenshots:setup": "bash scripts/setup-demo-data.sh || scripts\\setup-demo-data.bat"
   },
@@ -51,7 +70,10 @@
   "author": "Brian Mwirigi",
   "license": "MIT",
   "dependencies": {
-    "better-sqlite3": "^9.2.2",
+    "@actions/core": "^3.0.1",
+    "@actions/exec": "^3.0.0",
+    "@supabase/supabase-js": "^2.106.1",
+    "better-sqlite3": "^12.9.0",
     "chalk": "^4.1.2",
     "chokidar": "^3.5.3",
     "cli-table3": "^0.6.3",
@@ -62,6 +84,7 @@
   },
   "files": [
     "dist",
+    "pro",
     "skills",
     "README.md",
     "LICENSE"
@@ -72,14 +95,17 @@
     "@types/node": "^20.10.6",
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
+    "@types/supertest": "^7.2.0",
     "@vitejs/plugin-react": "^5.1.3",
-    "puppeteer": "^22.0.0",
+    "puppeteer": "^22.15.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "recharts": "^3.7.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.1.5"
   },
   "engines": {
     "node": ">=16.0.0"

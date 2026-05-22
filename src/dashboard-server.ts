@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction, Router } from 'express';
 import { join } from 'path';
-import { exec, execSync } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { createServer } from 'net';
 import { existsSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from 'fs';
 import { homedir } from 'os';
@@ -13,8 +13,10 @@ import {
   getProviderBreakdown, getFileHotspots, getActivityHeatmap,
   getDailyTokens, getCostVelocity, getProjectBreakdown, getTokenRatios,
   getSession, getCommits, clearAllData,
+  addFeedback, getFeedback,
 } from './db';
 import { getGitDiff, getCommitDiff, getGitDiffStats } from './git';
+import { getLicense, activateLicense, deactivateLicense } from '../pro/src/license';
 
 interface DashboardOptions {
   port?: number;
@@ -64,6 +66,11 @@ function killOwnStaleProcess(port: number): boolean {
     let cmdLine = '';
     try {
       if (process.platform === 'win32') {
+        // Validate pid is a safe integer before shell interpolation
+        if (!Number.isInteger(pid) || pid <= 0 || pid > 4194304) {
+          removePidFile(port);
+          return false;
+        }
         cmdLine = execSync(`wmic process where processid=${pid} get commandline`, { timeout: 2000, encoding: 'utf-8' });
       } else {
         cmdLine = readFileSync(`/proc/${pid}/cmdline`, 'utf-8').replace(/\0/g, ' ');
@@ -113,7 +120,7 @@ function isPortInUse(port: number): Promise<boolean> {
 
 // ── API route builder ──────────────────────────────────────
 
-function buildApiRouter(): Router {
+export function buildApiRouter(): Router {
   const router = Router();
 
   router.get('/stats', (_req, res) => {
@@ -121,6 +128,67 @@ function buildApiRouter(): Router {
       const stats = getStats();
       const active = getActiveSessions();
       res.json({ ...stats, activeSessions: active.length });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── License endpoints ────────────────────────────────────
+
+  router.get('/license', (_req, res) => {
+    try {
+      res.json(getLicense());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.post('/license/activate', (req, res) => {
+    try {
+      const { key } = req.body;
+      if (!key) return res.status(400).json({ success: false, error: 'Key is required' });
+      const result = activateLicense(key);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  router.post('/license/deactivate', (_req, res) => {
+    try {
+      deactivateLicense();
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ success: false, error: e.message });
+    }
+  });
+
+  router.post('/lead', async (req, res) => {
+    try {
+      const { email } = req.body;
+      if (!email || !email.includes('@')) {
+        return res.status(400).json({ error: 'Invalid email' });
+      }
+
+      const SUPABASE_URL = 'https://igmpvdvygkgjilakgslz.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbXB2ZHZ5Z2tnamlsYWtnc2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjI1ODAsImV4cCI6MjA5NTAzODU4MH0.iQMMxcRLsh1wJppUZSirsP0TKdDyzWD4aafXPJvFPFg';
+
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ email, source: 'dashboard' })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to capture lead');
+      }
+
+      res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -353,10 +421,43 @@ function buildApiRouter(): Router {
     }
   });
 
-  router.post('/reset', (_req, res) => {
+  router.post('/reset', (req, res) => {
+    // Require explicit confirmation header to prevent accidental data loss
+    if (req.headers['x-confirm-reset'] !== 'yes') {
+      return res.status(400).json({ error: 'Missing X-Confirm-Reset: yes header. This action permanently deletes all session data.' });
+    }
     try {
       clearAllData();
       res.json({ ok: true, message: 'All session data cleared' });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Feedback ─────────────────────────────────────────────
+
+  router.post('/feedback', (req, res) => {
+    try {
+      const { type, message, email } = req.body || {};
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return res.status(400).json({ error: 'Message is required' });
+      }
+      const validTypes = ['feature', 'bug', 'general', 'question'];
+      const feedbackType = validTypes.includes(type) ? type : 'general';
+      const result = addFeedback({
+        type: feedbackType,
+        message: message.trim().slice(0, 5000),
+        email: typeof email === 'string' ? email.trim().slice(0, 200) : undefined,
+      });
+      res.json({ ok: true, id: result.id, timestamp: result.timestamp });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/feedback', (_req, res) => {
+    try {
+      res.json(getFeedback(100));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -407,6 +508,24 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // JSON body limit (4kb -- we only read, but defence-in-depth)
   app.use(express.json({ limit: '4kb' }));
+
+  // ── CSRF protection for mutating endpoints ──────────────
+  // Block cross-origin POST/PUT/DELETE requests to prevent CSRF attacks.
+  // Any website could otherwise POST to http://127.0.0.1:3737/api/v1/reset.
+  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      return next();
+    }
+    const origin = req.headers.origin;
+    const referer = req.headers.referer;
+    // Allow requests with no Origin (curl, Postman, server-to-server)
+    if (!origin && !referer) return next();
+    // Allow same-origin requests
+    const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`, `http://${host}:${port}`];
+    if (origin && allowed.some(a => origin.startsWith(a))) return next();
+    if (referer && allowed.some(a => referer.startsWith(a))) return next();
+    res.status(403).json({ error: 'Cross-origin mutating request blocked (CSRF protection)' });
+  });
 
   // ── Token auth for non-localhost ─────────────────────────
 
@@ -461,10 +580,22 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // Read index.html once; inject token via <meta> tag (avoids CSP script-src issues)
   const indexPath = join(staticDir, 'index.html');
-  const rawHtml = readFileSync(indexPath, 'utf-8');
-  const servedHtml = token
-    ? rawHtml.replace('</head>', `<meta name="cs-token" content="${token}">\n</head>`)
-    : rawHtml;
+  let servedHtml: string;
+  if (!existsSync(indexPath)) {
+    // Dashboard UI hasn't been built — serve a helpful error instead of crashing
+    servedHtml = `<!DOCTYPE html><html><head><title>codesession dashboard</title></head><body style="font-family:system-ui;padding:40px;color:#ccc;background:#1a1a2e">
+      <h1>Dashboard not built</h1>
+      <p>Run <code style="color:#00d9ff">npm run build:dashboard</code> first, then restart <code style="color:#00d9ff">cs dashboard</code>.</p>
+    </body></html>`;
+    if (!jsonMode) {
+      console.warn('  Warning: Dashboard UI not found. Run `npm run build:dashboard` first.');
+    }
+  } else {
+    const rawHtml = readFileSync(indexPath, 'utf-8');
+    servedHtml = token
+      ? rawHtml.replace('</head>', `<meta name="cs-token" content="${token}">\n</head>`)
+      : rawHtml;
+  }
 
   // Serve index.html for all known SPA routes so client-side routing works on refresh.
   // Using explicit app.get() instead of app.use() catch-all for Express 5 compatibility.
@@ -507,10 +638,15 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
       if (shouldOpen && !jsonMode) {
         const openUrl = token ? `${url}?token=${token}` : url;
-        const cmd =
-          process.platform === 'win32' ? 'start' :
-          process.platform === 'darwin' ? 'open' : 'xdg-open';
-        exec(`${cmd} ${openUrl}`);
+        // Use spawn() with argument array to prevent command injection
+        try {
+          if (process.platform === 'win32') {
+            spawn('cmd', ['/c', 'start', '', openUrl], { detached: true, stdio: 'ignore' }).unref();
+          } else {
+            const cmd = process.platform === 'darwin' ? 'open' : 'xdg-open';
+            spawn(cmd, [openUrl], { detached: true, stdio: 'ignore' }).unref();
+          }
+        } catch (_) { /* browser open is best-effort */ }
       }
     });
 

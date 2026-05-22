@@ -28,10 +28,19 @@ export default function SessionList({ onSessionClick }: Props) {
   const [total, setTotal] = useState(0);
   const [status, setStatus] = useState('all');
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [page, setPage] = useState(0);
   const [sortKey, setSortKey] = useState<SortKey>('startTime');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const limit = 25;
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(0);
+    }, 300);
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   const fetchSessions = useCallback(() => {
     fetchApi<{ sessions: Session[]; total: number }>('/api/sessions', {
@@ -69,6 +78,9 @@ export default function SessionList({ onSessionClick }: Props) {
   const arrow = (key: SortKey) =>
     sortKey === key ? (sortDir === 'desc' ? ' \u2193' : ' \u2191') : '';
 
+  const getAriaSort = (key: SortKey) => 
+    sortKey === key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none';
+
   const costPerHour = (s: Session) => {
     if (!s.duration || s.duration === 0 || !s.aiCost) return null;
     return s.aiCost / (s.duration / 3600);
@@ -94,8 +106,8 @@ export default function SessionList({ onSessionClick }: Props) {
           type="text"
           className="filter-input"
           placeholder="Search by name\u2026"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); setPage(0); }}
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
         />
         <select
           className="filter-select"
@@ -121,15 +133,15 @@ export default function SessionList({ onSessionClick }: Props) {
             <table className="tbl tbl--clickable">
               <thead>
                 <tr>
-                  <th className="sortable" onClick={() => toggleSort('name')}>Name{arrow('name')}</th>
-                  <th>Status</th>
-                  <th className="sortable r" onClick={() => toggleSort('startTime')}>Started{arrow('startTime')}</th>
-                  <th className="sortable r" onClick={() => toggleSort('duration')}>Duration{arrow('duration')}</th>
-                  <th className="sortable r" onClick={() => toggleSort('filesChanged')}>Files{arrow('filesChanged')}</th>
-                  <th className="sortable r" onClick={() => toggleSort('commits')}>Commits{arrow('commits')}</th>
-                  <th className="sortable r" onClick={() => toggleSort('aiTokens')}>Tokens{arrow('aiTokens')}</th>
-                  <th className="sortable r" onClick={() => toggleSort('aiCost')}>Cost{arrow('aiCost')}</th>
-                  <th className="r">$/hr</th>
+                  <th role="columnheader" aria-sort={getAriaSort('name')} className="sortable" onClick={() => toggleSort('name')}>Name{arrow('name')}</th>
+                  <th role="columnheader">Status</th>
+                  <th role="columnheader" aria-sort={getAriaSort('startTime')} className="sortable r" onClick={() => toggleSort('startTime')}>Started{arrow('startTime')}</th>
+                  <th role="columnheader" aria-sort={getAriaSort('duration')} className="sortable r" onClick={() => toggleSort('duration')}>Duration{arrow('duration')}</th>
+                  <th role="columnheader" aria-sort={getAriaSort('filesChanged')} className="sortable r" onClick={() => toggleSort('filesChanged')}>Files{arrow('filesChanged')}</th>
+                  <th role="columnheader" aria-sort={getAriaSort('commits')} className="sortable r" onClick={() => toggleSort('commits')}>Commits{arrow('commits')}</th>
+                  <th role="columnheader" aria-sort={getAriaSort('aiTokens')} className="sortable r" onClick={() => toggleSort('aiTokens')}>Tokens{arrow('aiTokens')}</th>
+                  <th role="columnheader" aria-sort={getAriaSort('aiCost')} className="sortable r" onClick={() => toggleSort('aiCost')}>Cost{arrow('aiCost')}</th>
+                  <th role="columnheader" className="r">$/hr</th>
                 </tr>
               </thead>
               <tbody>
@@ -156,9 +168,9 @@ export default function SessionList({ onSessionClick }: Props) {
 
       {totalPages > 1 && (
         <div className="pagination">
-          <button disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</button>
+          <button aria-label="Previous page" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</button>
           <span className="page-info">{page + 1} / {totalPages}</span>
-          <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
+          <button aria-label="Next page" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Next</button>
         </div>
       )}
     </div>

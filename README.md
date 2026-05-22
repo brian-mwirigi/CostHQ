@@ -4,6 +4,7 @@
 
   <p>
     <a href="https://www.npmjs.com/package/codesession-cli"><img src="https://img.shields.io/npm/v/codesession-cli?color=brightgreen" alt="npm version"></a>
+    <a href="https://www.npmjs.com/package/codesession-cli"><img src="https://img.shields.io/npm/dy/codesession-cli?color=blue" alt="npm downloads"></a>
     <a href="https://clawhub.ai/brian-mwirigi/codesession"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
     <a href="https://github.com/brian-mwirigi/codesession-cli"><img src="https://img.shields.io/github/stars/brian-mwirigi/codesession-cli?style=social" alt="GitHub stars"></a>
     <a href="https://github.com/brian-mwirigi/codesession-cli/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/codesession-cli" alt="license"></a>
@@ -22,6 +23,17 @@
     <a href="#openclaw-skill"> OpenClaw Skill</a>
   </p>
 </div>
+
+---
+
+## What's New in v2.1.0 (The API Tracking Pivot)
+
+We merged the most loved features of `aitoken-cli` directly into codesession! You can now use codesession as a **drop-in Node.js library** to automatically track AI costs in your backend apps, completely headless.
+
+- **Drop-in SDKs** — Just `import { TrackedOpenAI } from 'codesession-cli/extensions'`
+- **Background Sessions** — API calls made via the library auto-create headless tracking sessions so you never lose a cent of data.
+- **Extended Model Pricing** — 42+ built-in models including DeepSeek, o1, o3, Azure, and Cohere.
+- **Middleware Hooks** — `createTrackedClient()` and `BatchTracker` for advanced Node.js architectures.
 
 ---
 
@@ -110,7 +122,43 @@ codesession-cli uses an embedded SQLite database ([better-sqlite3](https://githu
 npm install -g codesession-cli
 ```
 
-## Quick Start (for Agents)
+## Quick Start: Node.js Library (New!)
+
+With the merge of `aitoken-cli`, you can now use codesession as a drop-in Node.js library to track API spend in your own backend applications. Costs are automatically calculated and sent to your dashboard!
+
+### 1. Drop-in SDK Extensions
+
+Simply replace `new OpenAI()` with `new TrackedOpenAI()`:
+
+```typescript
+import { TrackedOpenAI, TrackedAnthropic } from 'codesession-cli/extensions';
+
+// Works exactly like the official OpenAI SDK, but logs tokens and costs automatically!
+const openai = new TrackedOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const response = await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: 'Hello!' }]
+});
+```
+
+### 2. Functional Wrappers
+
+If you already have a configured client, just wrap your calls:
+
+```typescript
+import { trackedGPT } from 'codesession-cli/wrappers';
+
+const response = await trackedGPT(openaiClient, { 
+  model: 'gpt-4o', 
+  messages 
+});
+```
+
+*(No active session? No problem. The library automatically creates a "Background API Session" for you in the dashboard).*
+
+---
+
+## Quick Start: CLI (for Agents & Humans)
 
 If you use OpenClaw, Claude Code, or any AI agent framework, this is for you. All commands support `--json` for machine-readable output:
 

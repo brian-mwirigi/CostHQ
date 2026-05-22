@@ -1,0 +1,20 @@
+CODESESSION PRO COMMERCIAL LICENSE
+
+Copyright (c) 2026 Brian Mwirigi
+
+This license applies ONLY to the files contained within the `pro/` directory of this repository and any of its subdirectories. The rest of the codesession-cli repository remains under the MIT License.
+
+1. Source Code Visibility
+The source code for the Pro features is made publicly available for transparency, security auditing, and educational purposes. 
+
+2. Usage Restrictions
+You may NOT use, execute, modify, or redistribute the code within the `pro/` directory without a valid, paid license key obtained from the official codesession-cli website or authorized resellers.
+
+3. Modification and Bypassing
+You may NOT modify the source code to bypass, disable, or otherwise circumvent the license validation mechanisms contained within this software.
+
+4. Redistribution
+You may NOT redistribute the Pro features, either in their original or modified form, as part of a competing product, service, or open-source alternative.
+
+5. No Warranty
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.

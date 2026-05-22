@@ -6,12 +6,12 @@ import { Session, FileChange, Commit, AIUsage, SessionStats, SessionNote } from 
 import { cleanupGit } from './git';
 import { cleanupWatcher } from './watcher';
 
-// Data directory: prefer ~/.codesession, migrate from legacy ~/.devsession
-const NEW_DB_DIR = join(homedir(), '.codesession');
+// Data directory: prefer env override, then ~/.codesession, migrate from legacy ~/.devsession
+const NEW_DB_DIR = process.env.CODESESSION_DATA_DIR || join(homedir(), '.codesession');
 const LEGACY_DB_DIR = join(homedir(), '.devsession');
 
-// Auto-migrate: if legacy dir exists but new doesn't, copy DB over (atomic-ish: copy -> verify -> use)
-if (existsSync(LEGACY_DB_DIR) && !existsSync(NEW_DB_DIR)) {
+// Auto-migrate: if legacy dir exists but new doesn't (skip for custom/test dirs)
+if (!process.env.CODESESSION_DATA_DIR && existsSync(LEGACY_DB_DIR) && !existsSync(NEW_DB_DIR)) {
   mkdirSync(NEW_DB_DIR, { recursive: true });
   const legacyDb = join(LEGACY_DB_DIR, 'sessions.db');
   const newDb = join(NEW_DB_DIR, 'sessions.db');
@@ -135,6 +135,45 @@ db.exec(`
   )
 `);
 
+// Feedback table for in-app user feedback
+db.exec(`
+  CREATE TABLE IF NOT EXISTS feedback (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    type TEXT NOT NULL DEFAULT 'general',
+    message TEXT NOT NULL,
+    email TEXT,
+    timestamp TEXT NOT NULL
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS proxy_cache (
+    hash TEXT PRIMARY KEY,
+    response TEXT NOT NULL,
+    cost REAL NOT NULL,
+    timestamp TEXT NOT NULL
+  )
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS config (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+  )
+`);
+
+// Create performance indexes for dashboard queries
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_sessions_status_start ON sessions(status, start_time);
+  CREATE INDEX IF NOT EXISTS idx_sessions_ai_cost ON sessions(ai_cost);
+  CREATE INDEX IF NOT EXISTS idx_ai_usage_session_id ON ai_usage(session_id);
+  CREATE INDEX IF NOT EXISTS idx_ai_usage_provider_model ON ai_usage(provider, model);
+  CREATE INDEX IF NOT EXISTS idx_ai_usage_timestamp ON ai_usage(timestamp);
+  CREATE INDEX IF NOT EXISTS idx_file_changes_session_id ON file_changes(session_id);
+  CREATE INDEX IF NOT EXISTS idx_file_changes_file_path ON file_changes(file_path);
+  CREATE INDEX IF NOT EXISTS idx_commits_session_id ON commits(session_id);
+`);
+
 export function createSession(session: Omit<Session, 'id'>): number {
   const stmt = db.prepare(`
     INSERT INTO sessions (name, start_time, working_directory, git_root, start_git_head, status)
@@ -158,16 +197,23 @@ export function getActiveSessions(): Session[] {
 }
 
 export function getActiveSessionForDir(dir: string): Session | null {
-  // Check both working_directory and git_root for matches
-  const stmt = db.prepare('SELECT * FROM sessions WHERE status = ? AND (working_directory = ? OR git_root = ?) ORDER BY id DESC LIMIT 1');
-  const row = stmt.get('active', dir, dir) as any;
-  if (!row) return null;
-  return mapSession(row);
+  // Normalize path for case-insensitive comparison on Windows
+  const norm = (p: string) => p.replace(/\\/g, '/').replace(/\/$/, '').toLowerCase();
+  const normDir = norm(dir);
+  const stmt = db.prepare('SELECT * FROM sessions WHERE status = ? ORDER BY id DESC');
+  const rows = stmt.all('active') as any[];
+  for (const row of rows) {
+    if (norm(row.working_directory) === normDir || (row.git_root && norm(row.git_root) === normDir)) {
+      return mapSession(row);
+    }
+  }
+  return null;
 }
 
 export function endSession(sessionId: number, endTime: string, notes?: string): void {
   const session = getSession(sessionId);
   if (!session) return;
+  if (session.status !== 'active') return;
 
   let duration = Math.floor((new Date(endTime).getTime() - new Date(session.startTime).getTime()) / 1000);
   // Sanity check: cap at 1 year (unlikely but prevents overflow/corruption from clock skew)
@@ -324,14 +370,14 @@ export function exportSessions(format: 'json' | 'csv', limit?: number): string {
   // CSV
   const header = 'id,name,status,startTime,endTime,duration,filesChanged,commits,aiTokens,aiCost,agents,notes';
   const rows = sessions.map((s) => {
-    // Escape CSV special characters: quotes and newlines
-    const escapeCsv = (str: string) => str.replace(/"/g, '""').replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    // Wrap value in quotes, escaping any embedded double-quotes
+    const q = (str: string) => `"${str.replace(/"/g, '""').replace(/\n/g, '\\n').replace(/\r/g, '')}"`;
     const aiUsage = getAIUsage(s.id!);
     const agents = [...new Set(aiUsage.map(a => a.agentName).filter(Boolean))].join('; ');
     return [
-      s.id, `"${escapeCsv(s.name || '')}"`, s.status, s.startTime, s.endTime || '',
+      s.id, q(s.name || ''), s.status, q(s.startTime), q(s.endTime || ''),
       s.duration || '', s.filesChanged, s.commits, s.aiTokens,
-      s.aiCost, `"${escapeCsv(agents)}"`, `"${escapeCsv(s.notes || '')}"`
+      s.aiCost, q(agents), q(s.notes || '')
     ].join(',');
   });
   return [header, ...rows].join('\n');
@@ -401,6 +447,33 @@ export function closeDb(): void {
   db.close();
 }
 
+// ─── Config Store ──────────────────────────────────────────────
+
+export function setConfig(key: string, value: string): void {
+  const stmt = db.prepare('INSERT INTO config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+  stmt.run(key, value);
+}
+
+export function getConfig(key: string): string | null {
+  const stmt = db.prepare('SELECT value FROM config WHERE key = ?');
+  const row = stmt.get(key) as any;
+  return row ? row.value : null;
+}
+
+// ─── Proxy Cache ──────────────────────────────────────────────
+
+export function getProxyCache(hash: string): { response: string; cost: number } | null {
+  const stmt = db.prepare('SELECT response, cost FROM proxy_cache WHERE hash = ?');
+  const row = stmt.get(hash) as any;
+  return row ? { response: row.response, cost: row.cost } : null;
+}
+
+export function setProxyCache(hash: string, response: string, cost: number): void {
+  const timestamp = new Date().toISOString();
+  const stmt = db.prepare('INSERT OR REPLACE INTO proxy_cache (hash, response, cost, timestamp) VALUES (?, ?, ?, ?)');
+  stmt.run(hash, response, cost, timestamp);
+}
+
 // ─── Session Notes / Annotations ──────────────────────────────
 
 export function addNote(sessionId: number, message: string): SessionNote {
@@ -451,20 +524,57 @@ const DEFAULT_PRICING: Record<string, { input: number; output: number }> = {
   // Anthropic (per 1M tokens)
   'claude-opus-4-6': { input: 15, output: 75 },
   'claude-sonnet-4-5': { input: 3, output: 15 },
+  'claude-sonnet-4.5': { input: 3, output: 15 },
   'claude-sonnet-4': { input: 3, output: 15 },
+  'claude-haiku-4.5': { input: 1.00, output: 5.00 },
   'claude-haiku-3.5': { input: 0.80, output: 4 },
+  'claude-3.5-sonnet': { input: 3, output: 15 },
+  'claude-3.5-haiku': { input: 1, output: 5 },
+  'claude-3-opus': { input: 15, output: 75 },
+  'claude-3-sonnet': { input: 3, output: 15 },
+  'claude-3-haiku': { input: 0.25, output: 1.25 },
+  'claude-2.1': { input: 8, output: 24 },
+  'claude-2.0': { input: 8, output: 24 },
+  'claude-instant': { input: 0.80, output: 2.40 },
+
   // OpenAI (per 1M tokens)
-  'gpt-4o': { input: 2.50, output: 10 },
-  'gpt-4o-mini': { input: 0.15, output: 0.60 },
+  'gpt-5.2': { input: 1.75, output: 14.00 },
+  'gpt-5.2-pro': { input: 21.00, output: 168.00 },
+  'gpt-5-mini': { input: 0.25, output: 2.00 },
   'gpt-4.1': { input: 2, output: 8 },
   'gpt-4.1-mini': { input: 0.40, output: 1.60 },
   'gpt-4.1-nano': { input: 0.10, output: 0.40 },
+  'gpt-4o': { input: 5.00, output: 15.00 }, // updated to match aitoken-cli pricing
+  'gpt-4o-mini': { input: 0.15, output: 0.60 },
   'o3': { input: 2, output: 8 },
   'o4-mini': { input: 1.10, output: 4.40 },
+  'o1-preview': { input: 15.00, output: 60.00 },
+  'o1-mini': { input: 3.00, output: 12.00 },
+  'gpt-4': { input: 30.00, output: 60.00 },
+  'gpt-4-32k': { input: 60.00, output: 120.00 },
+  'gpt-4-turbo': { input: 10.00, output: 30.00 },
+  'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
+  'gpt-3.5-turbo-16k': { input: 3.00, output: 4.00 },
+
   // Google (per 1M tokens)
   'gemini-2.5-pro': { input: 1.25, output: 10 },
   'gemini-2.5-flash': { input: 0.15, output: 0.60 },
   'gemini-2.0-flash': { input: 0.10, output: 0.40 },
+  'gemini-1.5-pro': { input: 3.50, output: 10.50 },
+  'gemini-1.5-flash': { input: 0.075, output: 0.30 },
+  'gemini-1.0-pro': { input: 0.50, output: 1.50 },
+  'gemini-pro': { input: 0.50, output: 1.50 },
+  'gemini-pro-vision': { input: 0.25, output: 0.50 },
+
+  // Azure OpenAI (per 1M tokens)
+  'gpt-35-turbo': { input: 0.50, output: 1.50 },
+
+  // Cohere (per 1M tokens)
+  'command-r-plus': { input: 3.00, output: 15.00 },
+  'command-r': { input: 0.50, output: 1.50 },
+  'command': { input: 1.00, output: 2.00 },
+  'command-light': { input: 0.30, output: 0.60 },
+
   // DeepSeek
   'deepseek-r1': { input: 0.55, output: 2.19 },
   'deepseek-v3': { input: 0.27, output: 1.10 },
@@ -475,7 +585,14 @@ export function loadPricing(): Record<string, { input: number; output: number }>
   if (existsSync(PRICING_PATH)) {
     try {
       const user = JSON.parse(readFileSync(PRICING_PATH, 'utf-8'));
-      Object.assign(merged, user);
+      // Guard against prototype pollution — only merge safe keys with valid pricing shape
+      for (const key of Object.keys(user)) {
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+        const val = user[key];
+        if (val && typeof val === 'object' && typeof val.input === 'number' && typeof val.output === 'number') {
+          merged[key] = { input: val.input, output: val.output };
+        }
+      }
     } catch (_) { /* ignore bad JSON */ }
   }
   return merged;
@@ -839,3 +956,60 @@ export function getTokenRatios(): Array<{
     calls: r.calls,
   }));
 }
+
+// ── Feedback ────────────────────────────────────────────────
+
+export function addFeedback(feedback: { type: string; message: string; email?: string }): { id: number; timestamp: string } {
+  const timestamp = new Date().toISOString();
+  const stmt = db.prepare('INSERT INTO feedback (type, message, email, timestamp) VALUES (?, ?, ?, ?)');
+  const result = stmt.run(feedback.type, feedback.message, feedback.email || null, timestamp);
+  return { id: result.lastInsertRowid as number, timestamp };
+}
+
+export function getFeedback(limit = 50): { id: number; type: string; message: string; email?: string; timestamp: string }[] {
+  const stmt = db.prepare('SELECT * FROM feedback ORDER BY id DESC LIMIT ?');
+  const rows = stmt.all(limit) as any[];
+  return rows.map(r => ({ id: r.id, type: r.type, message: r.message, email: r.email || undefined, timestamp: r.timestamp }));
+}
+
+// ── aitoken-cli Core Merge ──────────────────────────────────
+
+export function calculateCost(provider: string, model: string, promptTokens: number, completionTokens: number): number {
+  const pricing = loadPricing();
+  
+  // exact match
+  if (pricing[model]) {
+    const { input, output } = pricing[model];
+    return (promptTokens / 1_000_000) * input + (completionTokens / 1_000_000) * output;
+  }
+  
+  // prefix match (e.g., gpt-4o-2024-05-13 -> gpt-4o)
+  const matches = Object.keys(pricing)
+    .filter(k => model.startsWith(k))
+    .sort((a, b) => b.length - a.length);
+    
+  if (matches.length > 0) {
+    const { input, output } = pricing[matches[0]];
+    return (promptTokens / 1_000_000) * input + (completionTokens / 1_000_000) * output;
+  }
+  
+  return 0; // unknown model
+}
+
+export function ensureTrackingSession(dir: string): number {
+  const active = getActiveSessionForDir(dir);
+  if (active && active.id !== undefined) return active.id;
+  
+  // auto-create a headless tracking session if none exists
+  return createSession({
+    name: 'Background API Session',
+    startTime: new Date().toISOString(),
+    workingDirectory: dir,
+    status: 'active',
+    filesChanged: 0,
+    commits: 0,
+    aiCost: 0,
+    aiTokens: 0
+  });
+}
+

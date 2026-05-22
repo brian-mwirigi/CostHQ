@@ -89,7 +89,7 @@ function handleChange(
   const timeout = setTimeout(() => {
     session.changedFiles.delete(key);
     session.timeouts.delete(timeout);
-  }, 1000);
+  }, 3000);
   session.timeouts.add(timeout);
 
   addFileChange({
