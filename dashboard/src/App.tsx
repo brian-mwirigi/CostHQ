@@ -7,13 +7,14 @@ import ModelBreakdown from './components/ModelBreakdown';
 import Insights from './components/Insights';
 import Alerts from './components/Alerts';
 import LicenseSettings from '../../pro/dashboard/LicenseSettings';
+import Donate from './components/Donate';
 import Feedback from './components/Feedback';
 import ShareCard from './components/ShareCard';
 import Onboarding from './components/Onboarding';
 import Banner from './components/Banner';
 import { LicenseProvider } from '../../pro/dashboard/LicenseContext';
 
-export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'feedback' | 'share';
+export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share';
 
 // ── URL-based routing (no react-router needed) ─────────────
 
@@ -28,6 +29,7 @@ function parseRoute(): { page: Page; sessionId: number | null } {
   if (path === '/insights') return { page: 'insights', sessionId: null };
   if (path === '/alerts') return { page: 'alerts', sessionId: null };
   if (path === '/upgrade') return { page: 'upgrade', sessionId: null };
+  if (path === '/donate') return { page: 'donate', sessionId: null };
   if (path === '/feedback') return { page: 'feedback', sessionId: null };
   if (path === '/share') return { page: 'share', sessionId: null };
   return { page: 'overview', sessionId: null };
@@ -51,15 +53,24 @@ export default function App() {
     }
   }, []);
 
+  // Telemetry ping
   useEffect(() => {
-    if (!localStorage.getItem('cs-onboarded')) {
-      setShowOnboarding(true);
+    if (localStorage.getItem('cs-telemetry') === '1') {
+      try {
+        fetch('https://api.brianmunene.me/telemetry?tool=codesession', { mode: 'no-cors' }).catch(() => {});
+      } catch (e) {
+        // ignore errors
+      }
     }
   }, []);
 
   const completeOnboarding = useCallback(() => {
     localStorage.setItem('cs-onboarded', '1');
     setShowOnboarding(false);
+    // Send initial telemetry ping if just opted in
+    if (localStorage.getItem('cs-telemetry') === '1') {
+      try { fetch('https://api.brianmunene.me/telemetry?tool=codesession', { mode: 'no-cors' }).catch(() => {}); } catch(e) {}
+    }
   }, []);
 
   // Sync state on browser back/forward
@@ -94,30 +105,32 @@ export default function App() {
     <LicenseProvider>
       <div className="app">
         <Banner />
-      <Sidebar page={page} onNavigate={navigate} />
-      <main className="main-content">
-        {selectedSession !== null ? (
-          <SessionDetail sessionId={selectedSession} onBack={goBackToSessions} />
-        ) : page === 'overview' ? (
-          <Overview onSessionClick={selectSession} />
-        ) : page === 'sessions' ? (
-          <SessionList onSessionClick={selectSession} />
-        ) : page === 'insights' ? (
-          <Insights />
-        ) : page === 'alerts' ? (
-          <Alerts />
-        ) : page === 'feedback' ? (
-          <Feedback />
-        ) : page === 'share' ? (
-          <ShareCard />
-        ) : page === 'upgrade' ? (
-          <LicenseSettings />
-        ) : (
-          <ModelBreakdown />
-        )}
-      </main>
-      {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
-    </div>
+        <Sidebar page={page} onNavigate={navigate} />
+        <main className="main-content">
+          {selectedSession !== null ? (
+            <SessionDetail sessionId={selectedSession} onBack={goBackToSessions} />
+          ) : page === 'overview' ? (
+            <Overview onSessionClick={selectSession} />
+          ) : page === 'sessions' ? (
+            <SessionList onSessionClick={selectSession} />
+          ) : page === 'insights' ? (
+            <Insights />
+          ) : page === 'alerts' ? (
+            <Alerts />
+          ) : page === 'feedback' ? (
+            <Feedback />
+          ) : page === 'share' ? (
+            <ShareCard />
+          ) : page === 'upgrade' ? (
+            <LicenseSettings />
+          ) : page === 'donate' ? (
+            <Donate />
+          ) : (
+            <ModelBreakdown />
+          )}
+        </main>
+        {showOnboarding && <Onboarding onComplete={completeOnboarding} />}
+      </div>
     </LicenseProvider>
   );
 }

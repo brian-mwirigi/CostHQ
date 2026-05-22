@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../App';
 import { fetchApi, postApi } from '../api';
-import { IconOverview, IconSessions, IconModels, IconActivity, IconBarChart, IconBell, IconKey, IconRefreshCw, IconDownload, IconMessageSquare } from './Icons';
+import { IconOverview, IconSessions, IconModels, IconActivity, IconBarChart, IconBell, IconKey, IconRefreshCw, IconDownload, IconMessageSquare, IconHeart } from './Icons';
 import ProBadge from '../../../pro/dashboard/ProBadge';
 import { useLicense } from '../../../pro/dashboard/LicenseContext';
 
@@ -14,6 +14,7 @@ const NAV: { page: Page; icon: React.ReactNode; label: string }[] = [
   { page: 'share', icon: <IconDownload size={16} />, label: 'Share Stats' },
   { page: 'feedback', icon: <IconMessageSquare size={16} />, label: 'Feedback' },
   { page: 'upgrade', icon: <IconKey size={16} />, label: 'License' },
+  { page: 'donate', icon: <IconHeart size={16} />, label: 'Donate' },
 ];
 
 interface Props {

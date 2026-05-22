@@ -2205,4 +2205,221 @@ body {
   padding: 10px 24px;
   font-size: 15px;
   text-decoration: none;
+
 }
+
+/* ── Premium UI Polish ─────────────────────────────────── */
+
+/* Micro-animations: cards slide up on mount */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.card {
+  animation: slideUp 0.3s ease both;
+}
+
+.card:nth-child(2) { animation-delay: 0.04s; }
+.card:nth-child(3) { animation-delay: 0.08s; }
+.card:nth-child(4) { animation-delay: 0.12s; }
+.card:nth-child(5) { animation-delay: 0.16s; }
+
+/* Hover glow on cards */
+.card {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--border-light);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.04);
+}
+
+/* Stat cells pop animation */
+.stat-cell {
+  animation: scaleIn 0.25s ease both;
+}
+
+.stat-cell:nth-child(2) { animation-delay: 0.03s; }
+.stat-cell:nth-child(3) { animation-delay: 0.06s; }
+.stat-cell:nth-child(4) { animation-delay: 0.09s; }
+.stat-cell:nth-child(5) { animation-delay: 0.12s; }
+.stat-cell:nth-child(6) { animation-delay: 0.15s; }
+.stat-cell:nth-child(7) { animation-delay: 0.18s; }
+
+/* Glassmorphism sidebar */
+.sidebar {
+  background: rgba(17, 17, 19, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Nav item hover glow */
+.nav-item:hover {
+  background: rgba(59, 130, 246, 0.06);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.nav-item.active {
+  background: rgba(59, 130, 246, 0.10);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Smooth page transitions */
+.page {
+  animation: slideUp 0.2s ease;
+}
+
+
+
+/* Button hover effects */
+.modal-btn,
+.filter-select,
+.pagination button {
+  transition: all 0.15s ease;
+}
+
+.modal-btn:hover:not(:disabled),
+.pagination button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ── Share Card Styles ─────────────────────────────────── */
+
+.share-card-container {
+  max-width: 640px;
+}
+
+.share-card {
+  background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0d1b2a 100%);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 16px;
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.share-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+}
+
+.share-card-header {
+  text-align: center;
+  margin-bottom: 32px;
+  position: relative;
+}
+
+.share-card-brand {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.share-card-title {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fff 0%, #a1a1aa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.share-card-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  position: relative;
+}
+
+.share-stat {
+  text-align: center;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.share-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.share-stat-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.share-card-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  position: relative;
+}
+
+.share-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.share-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+}
+
+.share-btn--secondary {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.share-btn--secondary:hover {
+  border-color: var(--border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+
+
