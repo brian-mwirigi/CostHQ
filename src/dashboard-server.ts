@@ -170,8 +170,8 @@ export function buildApiRouter(): Router {
         return res.status(400).json({ error: 'Invalid email' });
       }
 
-      const SUPABASE_URL = process.env.SUPABASE_URL || '';
-      const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || '';
+      const SUPABASE_URL = 'https://igmpvdvygkgjilakgslz.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlnbXB2ZHZ5Z2tnamlsYWtnc2x6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk0NjI1ODAsImV4cCI6MjA5NTAzODU4MH0.iQMMxcRLsh1wJppUZSirsP0TKdDyzWD4aafXPJvFPFg';
 
       const response = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
         method: 'POST',
