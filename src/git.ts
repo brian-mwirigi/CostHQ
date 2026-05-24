@@ -9,10 +9,20 @@ interface GitSession {
 }
 
 const sessions = new Map<number, GitSession>();
+const gitInstances = new Map<string, SimpleGit>();
+
+function getGit(cwd: string): SimpleGit {
+  let g = gitInstances.get(cwd);
+  if (!g) {
+    g = simpleGit(cwd);
+    gitInstances.set(cwd, g);
+  }
+  return g;
+}
 
 export function initGit(sessionId: number, cwd: string): void {
   sessions.set(sessionId, {
-    git: simpleGit(cwd),
+    git: getGit(cwd),
     lastCommitHash: null,
   });
 }
@@ -87,7 +97,7 @@ export function cleanupGit(sessionId: number): void {
  */
 export async function getGitRoot(cwd: string): Promise<string | null> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const root = await g.revparse(['--show-toplevel']);
     return root.trim();
   } catch (_) {
@@ -100,7 +110,7 @@ export async function getGitRoot(cwd: string): Promise<string | null> {
  */
 export async function getGitHead(cwd: string): Promise<string | null> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const head = await g.revparse(['HEAD']);
     return head.trim();
   } catch (_) {
@@ -114,7 +124,7 @@ export async function getGitHead(cwd: string): Promise<string | null> {
  */
 export async function getGitDiffFiles(cwd: string, fromHead: string): Promise<{ filePath: string; changeType: 'created' | 'modified' | 'deleted' }[]> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const diff = await g.diff(['--name-status', `${fromHead}..HEAD`]);
     if (!diff.trim()) return [];
     return diff.trim().split('\n').map((line) => {
@@ -137,7 +147,7 @@ export async function getGitDiffFiles(cwd: string, fromHead: string): Promise<{ 
  */
 export async function getGitLogCommits(cwd: string, fromHead: string): Promise<{ hash: string; message: string; timestamp: string }[]> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const log = await g.log({ from: fromHead, to: 'HEAD' });
     return log.all.map((entry) => ({
       hash: entry.hash.substring(0, 7),
@@ -160,7 +170,7 @@ export async function getGitDiff(
   filePath?: string,
 ): Promise<string> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const range = toSha ? `${fromSha}..${toSha}` : `${fromSha}..HEAD`;
     const args = ['diff', '--unified=5', range];
     if (filePath) args.push('--', filePath);
@@ -176,7 +186,7 @@ export async function getGitDiff(
  */
 export async function getCommitDiff(cwd: string, hash: string, filePath?: string): Promise<string> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const args = ['diff', '--unified=5', `${hash}~1`, hash];
     if (filePath) args.push('--', filePath);
     const result = await g.raw(args);
@@ -196,7 +206,7 @@ export async function getGitDiffStats(
   toSha: string | null,
 ): Promise<{ filePath: string; additions: number; deletions: number }[]> {
   try {
-    const g = simpleGit(cwd);
+    const g = getGit(cwd);
     const range = toSha ? `${fromSha}..${toSha}` : `${fromSha}..HEAD`;
     const result = await g.raw(['diff', '--numstat', range]);
     if (!result.trim()) return [];

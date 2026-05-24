@@ -77,7 +77,7 @@ export default function SessionDetail({ sessionId, onBack }: Props) {
   }, [sessionId]);
 
   const fetchData = useCallback(() => {
-    fetchApi<SessionDetailResponse>(`/api/sessions/${sessionId}`).then(setData);
+    fetchApi<SessionDetailResponse>(`/api/sessions/${sessionId}`).then(setData).catch(console.error);
   }, [sessionId]);
 
   useInterval(fetchData, 30_000);

@@ -51,7 +51,7 @@ export default function SessionList({ onSessionClick }: Props) {
     }).then((data) => {
       setSessions(data.sessions);
       setTotal(data.total);
-    });
+    }).catch(console.error);
   }, [status, search, page]);
 
   useEffect(() => {

@@ -48,6 +48,13 @@ const db = new Database(DB_PATH);
 // Enable WAL mode + busy timeout for concurrent access safety
 db.pragma('journal_mode = WAL');
 db.pragma('busy_timeout = 5000');
+db.pragma('synchronous = NORMAL');
+db.pragma('foreign_keys = ON');
+
+// Ensure clean flush of WAL on process termination
+process.on('exit', () => db.close());
+process.on('SIGINT', () => { db.close(); process.exit(0); });
+process.on('SIGTERM', () => { db.close(); process.exit(0); });
 
 // Initialize database
 db.exec(`
@@ -166,7 +173,10 @@ db.exec(`
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_status_start ON sessions(status, start_time);
   CREATE INDEX IF NOT EXISTS idx_sessions_ai_cost ON sessions(ai_cost);
+  CREATE INDEX IF NOT EXISTS idx_sessions_start_time ON sessions(start_time);
+  CREATE INDEX IF NOT EXISTS idx_sessions_working_dir ON sessions(working_directory);
   CREATE INDEX IF NOT EXISTS idx_ai_usage_session_id ON ai_usage(session_id);
+  CREATE INDEX IF NOT EXISTS idx_ai_usage_session_timestamp ON ai_usage(session_id, timestamp);
   CREATE INDEX IF NOT EXISTS idx_ai_usage_provider_model ON ai_usage(provider, model);
   CREATE INDEX IF NOT EXISTS idx_ai_usage_timestamp ON ai_usage(timestamp);
   CREATE INDEX IF NOT EXISTS idx_file_changes_session_id ON file_changes(session_id);

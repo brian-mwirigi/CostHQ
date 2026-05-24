@@ -347,7 +347,7 @@ program
       }
       
       // Fire webhook alert
-      fireWebhook(updated);
+      await fireWebhook(updated);
     }
   });
 

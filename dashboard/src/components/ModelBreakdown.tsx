@@ -62,9 +62,9 @@ export default function ModelBreakdown() {
   }, []);
 
   const fetchAll = useCallback(() => {
-    fetchApi<ModelRow[]>('/api/model-breakdown').then(setModels);
-    fetchApi<ProviderRow[]>('/api/provider-breakdown').then(setProviders);
-    fetchApi<TokenRatio[]>('/api/token-ratios').then(setRatios);
+    fetchApi<ModelRow[]>('/api/model-breakdown').then(setModels).catch(console.error);
+    fetchApi<ProviderRow[]>('/api/provider-breakdown').then(setProviders).catch(console.error);
+    fetchApi<TokenRatio[]>('/api/token-ratios').then(setRatios).catch(console.error);
   }, []);
 
   useInterval(fetchAll, 30_000);

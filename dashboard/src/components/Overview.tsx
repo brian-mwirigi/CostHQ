@@ -65,11 +65,11 @@ export default function Overview({ onSessionClick }: Props) {
   }, []);
 
   const fetchAll = useCallback(() => {
-    fetchApi<Stats>('/api/stats').then(setStats);
-    fetchApi<DailyCost[]>('/api/daily-costs', { days: '30' }).then(setDaily);
-    fetchApi<DailyToken[]>('/api/daily-tokens', { days: '30' }).then(setDailyTokens);
-    fetchApi<TopSession[]>('/api/top-sessions', { limit: '5' }).then(setTop);
-    fetchApi<CostVelocityItem[]>('/api/cost-velocity', { limit: '20' }).then(setVelocity);
+    fetchApi<Stats>('/api/stats').then(setStats).catch(console.error);
+    fetchApi<DailyCost[]>('/api/daily-costs', { days: '30' }).then(setDaily).catch(console.error);
+    fetchApi<DailyToken[]>('/api/daily-tokens', { days: '30' }).then(setDailyTokens).catch(console.error);
+    fetchApi<TopSession[]>('/api/top-sessions', { limit: '5' }).then(setTop).catch(console.error);
+    fetchApi<CostVelocityItem[]>('/api/cost-velocity', { limit: '20' }).then(setVelocity).catch(console.error);
   }, []);
 
   useInterval(fetchAll, 30_000);

@@ -1981,11 +1981,6 @@ body {
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
 }
 
-  padding: 10px 24px;
-  font-size: 15px;
-  text-decoration: none;
-}
-
 .upgrade-prompt__link {
   background: none;
   border: none;

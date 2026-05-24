@@ -71,10 +71,10 @@ export default function Insights() {
   const [tab, setTab] = useState<'hotspots' | 'heatmap' | 'projects' | 'pricing'>('hotspots');
 
   const fetchAll = useCallback(() => {
-    fetchApi<FileHotspot[]>('/api/file-hotspots').then(setHotspots);
-    fetchApi<HeatmapCell[]>('/api/activity-heatmap').then(setHeatmap);
-    fetchApi<ProjectRow[]>('/api/projects').then(setProjects);
-    fetchApi<PricingMap>('/api/pricing').then(setPricing);
+    fetchApi<FileHotspot[]>('/api/file-hotspots').then(setHotspots).catch(console.error);
+    fetchApi<HeatmapCell[]>('/api/activity-heatmap').then(setHeatmap).catch(console.error);
+    fetchApi<ProjectRow[]>('/api/projects').then(setProjects).catch(console.error);
+    fetchApi<PricingMap>('/api/pricing').then(setPricing).catch(console.error);
   }, []);
 
   useEffect(() => {

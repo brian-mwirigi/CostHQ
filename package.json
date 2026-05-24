@@ -45,6 +45,7 @@
     "dev:dashboard": "npx vite --config dashboard/vite.config.ts",
     "start": "node dist/index.js",
     "prepare": "npm run build",
+    "release": "node scripts/release.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -80,7 +81,6 @@
     "commander": "^11.1.0",
     "date-fns": "^3.0.6",
     "express": "^5.2.1",
-    "puppeteer": "^22.8.0",
     "simple-git": "^3.22.0"
   },
   "files": [

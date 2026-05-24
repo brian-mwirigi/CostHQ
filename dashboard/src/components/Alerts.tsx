@@ -226,9 +226,9 @@ export default function Alerts() {
   const firedRef = useRef<Set<string> | null>(null);
 
   const fetchAll = useCallback(() => {
-    fetchApi<Stats>('/api/stats').then(setStats);
-    fetchApi<DailyCost[]>('/api/daily-costs', { days: '30' }).then(setDaily);
-    fetchApi<TopSession[]>('/api/top-sessions', { limit: '20' }).then(setTop);
+    fetchApi<Stats>('/api/stats').then(setStats).catch(console.error);
+    fetchApi<DailyCost[]>('/api/daily-costs', { days: '30' }).then(setDaily).catch(console.error);
+    fetchApi<TopSession[]>('/api/top-sessions', { limit: '20' }).then(setTop).catch(console.error);
   }, []);
 
   useEffect(() => { fetchAll(); }, []);
