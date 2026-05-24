@@ -26,6 +26,16 @@
 
 ---
 
+## What's New in v3.0.0 (The Pro Unlock)
+
+We've completely overhauled the UI, added new sharing tools, and unlocked the entire Pro architecture for free!
+
+- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
+- **In-App Feedback** — Built-in feedback modal allowing you to report bugs or request features directly from the dashboard.
+- **Onboarding Wizard** — First-time user overlay walkthrough for CLI commands and dashboard capabilities.
+- **Pro Features Unlocked** — The entire Pro tier architecture (including Alerts, Share Cards, and Insights) is now completely free and unlocked by default.
+- **Massive Performance Boosts** — SQLite performance indexes added, `simple-git` instances are now cached, and `puppeteer` was removed from production dependencies making installs significantly faster.
+
 ## What's New in v2.1.0 (The API Tracking Pivot)
 
 We merged the most loved features of `aitoken-cli` directly into codesession! You can now use codesession as a **drop-in Node.js library** to automatically track AI costs in your backend apps, completely headless.
