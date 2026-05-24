@@ -435,6 +435,7 @@ export function clearAllData(): void {
 
   const transaction = db.transaction(() => {
     db.prepare('DELETE FROM session_notes').run();
+    db.prepare('DELETE FROM feedback').run();
     db.prepare('DELETE FROM ai_usage').run();
     db.prepare('DELETE FROM file_changes').run();
     db.prepare('DELETE FROM commits').run();
@@ -581,7 +582,7 @@ const DEFAULT_PRICING: Record<string, { input: number; output: number }> = {
 };
 
 export function loadPricing(): Record<string, { input: number; output: number }> {
-  const merged = { ...DEFAULT_PRICING };
+  const merged = Object.assign(Object.create(null), DEFAULT_PRICING);
   if (existsSync(PRICING_PATH)) {
     try {
       const user = JSON.parse(readFileSync(PRICING_PATH, 'utf-8'));
@@ -691,7 +692,7 @@ export function getDailyCosts(days: number = 30): Array<{
   const rows = stmt.all(days) as any[];
   return rows.map(r => ({
     day: r.day,
-    cost: Math.round((r.cost || 0) * 100) / 100,
+    cost: Math.round((r.cost || 0) * 10000) / 10000,
     sessions: r.sessions,
     tokens: r.tokens || 0,
   }));
@@ -885,8 +886,8 @@ export function getCostVelocity(limit: number = 50): Array<{
     name: r.name,
     startTime: r.start_time,
     duration: r.duration,
-    aiCost: Math.round((r.ai_cost || 0) * 100) / 100,
-    costPerHour: r.duration > 0 ? Math.round(((r.ai_cost || 0) / (r.duration / 3600)) * 100) / 100 : 0,
+    aiCost: Math.round((r.ai_cost || 0) * 10000) / 10000,
+    costPerHour: r.duration > 0 ? Math.round(((r.ai_cost || 0) / (r.duration / 3600)) * 10000) / 10000 : 0,
   }));
 }
 
@@ -977,6 +978,12 @@ export function getFeedback(limit = 50): { id: number; type: string; message: st
 export function calculateCost(provider: string, model: string, promptTokens: number, completionTokens: number): number {
   const pricing = loadPricing();
   
+  // exact match with namespace
+  if (pricing[`${provider}/${model}`]) {
+    const { input, output } = pricing[`${provider}/${model}`];
+    return (promptTokens / 1_000_000) * input + (completionTokens / 1_000_000) * output;
+  }
+
   // exact match
   if (pricing[model]) {
     const { input, output } = pricing[model];
@@ -985,7 +992,7 @@ export function calculateCost(provider: string, model: string, promptTokens: num
   
   // prefix match (e.g., gpt-4o-2024-05-13 -> gpt-4o)
   const matches = Object.keys(pricing)
-    .filter(k => model.startsWith(k))
+    .filter(k => model.startsWith(k) || `${provider}/${model}`.startsWith(k))
     .sort((a, b) => b.length - a.length);
     
   if (matches.length > 0) {

@@ -8,8 +8,10 @@ export function formatDuration(seconds: number | undefined | null): string {
     return s > 0 ? `${m}m ${s}s` : `${m}m`;
   }
   const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+  const remainder = seconds % 3600;
+  if (remainder === 0) return `${h}h`;
+  const m = Math.floor(remainder / 60);
+  return `${h}h ${m}m`;
 }
 
 export function formatCost(cost: number | undefined | null): string {
@@ -31,10 +33,11 @@ export function formatDate(dateStr: string): string {
     day: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
+    timeZone: 'UTC',
   });
 }
 
 export function formatDay(dateStr: string): string {
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const d = dateStr.includes('T') ? new Date(dateStr) : new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 }

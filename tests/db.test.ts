@@ -7,7 +7,7 @@ import {
   recoverStaleSessions, getSessionsPaginated, getSessionDetail,
   getDailyCosts, getModelBreakdown, getTopSessions, getProviderBreakdown,
   getFileHotspots, getActivityHeatmap, getDailyTokens, getCostVelocity,
-  getProjectBreakdown, getTokenRatios,
+  getProjectBreakdown, getTokenRatios, getPricingPath
 } from '../src/db';
 
 beforeEach(() => { clearAllData(); });
@@ -289,12 +289,11 @@ describe('Pricing', () => {
   it('loadPricing blocks prototype pollution keys', () => {
     // Manually write a malicious pricing file
     const { writeFileSync } = require('fs');
-    const { getPricingPath } = require('../src/db');
     writeFileSync(getPricingPath(), JSON.stringify({ '__proto__': { input: 999, output: 999 }, 'constructor': { input: 1, output: 1 }, 'legit-model': { input: 2, output: 3 } }));
     const p = loadPricing();
     expect(p['legit-model']).toEqual({ input: 2, output: 3 });
-    expect(p['__proto__']).toBeUndefined();
-    expect(p['constructor']).toBeUndefined();
+    expect(Object.hasOwn(p, '__proto__')).toBe(false);
+    expect(Object.hasOwn(p, 'constructor')).toBe(false);
     resetPricing();
   });
 });

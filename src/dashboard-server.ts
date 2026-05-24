@@ -123,6 +123,28 @@ function isPortInUse(port: number): Promise<boolean> {
 export function buildApiRouter(): Router {
   const router = Router();
 
+  router.use((_req, res, next) => {
+    res.setHeader('X-Codesession-Api-Version', '1');
+    next();
+  });
+
+  router.use((req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
+      const origin = req.headers.origin || req.headers.referer;
+      if (origin) {
+        try {
+          const url = new URL(origin);
+          if (url.origin !== 'http://localhost:3737' && url.origin !== 'http://127.0.0.1:3737') {
+            return res.status(403).json({ error: 'CSRF' });
+          }
+        } catch {
+          return res.status(403).json({ error: 'CSRF' });
+        }
+      }
+    }
+    next();
+  });
+
   router.get('/stats', (_req, res) => {
     try {
       const stats = getStats();
@@ -507,7 +529,7 @@ export function startDashboard(options: DashboardOptions = {}): void {
   });
 
   // JSON body limit (4kb -- we only read, but defence-in-depth)
-  app.use(express.json({ limit: '4kb' }));
+  app.use(express.json({ limit: '50kb' }));
 
   // ── CSRF protection for mutating endpoints ──────────────
   // Block cross-origin POST/PUT/DELETE requests to prevent CSRF attacks.
