@@ -22,6 +22,8 @@
     <a href="https://github.com/brian-mwirigi/codesession-cli/blob/main/CHANGELOG.md"> Changelog</a> •
     <a href="#openclaw-skill"> OpenClaw Skill</a>
   </p>
+
+  <p>Developed by <a href="https://brianmunene.me">Brian Munene Mwirigi</a></p>
 </div>
 
 ---
