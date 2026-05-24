@@ -23,8 +23,8 @@ const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
 export function LicenseProvider({ children }: { children: ReactNode }) {
   const [info, setInfo] = useState<LicenseInfo>({
-    valid: false,
-    plan: 'free',
+    valid: true,
+    plan: 'pro',
     email: null,
     seats: 1,
     trial: { active: false, daysRemaining: 0 }
@@ -66,7 +66,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
-  const isPro = (info.valid && (info.plan === 'pro' || info.plan === 'enterprise')) || info.trial.active;
+  const isPro = true; // Temporarily unlocked
 
   return (
     <LicenseContext.Provider value={{ ...info, isPro, loading, activate, deactivate }}>

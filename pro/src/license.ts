@@ -90,7 +90,7 @@ export function getTrialStatus() {
 
 export function getLicense(): LicenseInfo {
   const trial = getTrialStatus();
-  const defaultInfo: LicenseInfo = { valid: false, plan: 'free', email: null, seats: 1, trial };
+  const defaultInfo: LicenseInfo = { valid: true, plan: 'pro', email: null, seats: 1, trial };
 
   const licensePath = getLicensePath();
   if (!fs.existsSync(licensePath)) return defaultInfo;
@@ -144,6 +144,5 @@ export function deactivateLicense() {
 }
 
 export function isPro(): boolean {
-  const info = getLicense();
-  return (info.valid && (info.plan === 'pro' || info.plan === 'enterprise')) || info.trial.active;
+  return true; // Temporarily unlocked
 }
