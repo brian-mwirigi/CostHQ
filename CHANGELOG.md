@@ -5,6 +5,25 @@ All notable changes to codesession-cli will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-05-24
+
+### Added
+- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
+- **In-App Feedback System** — A built-in feedback modal allowing users to report bugs or request features directly from the dashboard.
+- **Onboarding Wizard** — First-time user overlay walkthrough for CLI commands and dashboard capabilities.
+- **Pro Licensing Architecture** — Built out the foundational logic for licensing, tiered features, and secure external API syncing.
+
+### Fixed
+- **React Stability** — Appended `.catch(console.error)` to all floating `fetchApi` Promise chains across the dashboard components to prevent silent crash errors when the network drops.
+- **SQLite Database Integrity** — Bound `db.close()` to `process.on('exit')` to guarantee clean WAL flushing during abrupt CLI exits.
+- **Missing Webhooks** — Fixed floating webhook promises that caused webhooks to occasionally skip if the CLI process exited too fast.
+
+### Enhanced
+- **SQLite Performance** — Added missing database indexes (`working_directory`, `start_time`, `change_type`, etc.) making dashboard API endpoints resolve significantly faster for high-volume users.
+- **Git Caching Layer** — Created a `getGit` caching wrapper to memoize `SimpleGit` instances, massively reducing CPU and memory overhead during file watcher updates.
+- **CSS Deduplication** — Stripped over 200 lines of duplicated Premium UI CSS to clean up and slim down the frontend bundle size.
+- **Dependency Bloat** — Officially moved `puppeteer` out of `dependencies` into `devDependencies` — `npm install codesession-cli` is now instantly faster and avoids downloading 400MB Chromium binaries.
+
 ## [2.0.0] - 2026-02-14
 
 ### Added
