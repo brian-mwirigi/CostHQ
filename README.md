@@ -32,6 +32,7 @@
 
 We've completely overhauled the UI, added new sharing tools, and unlocked the entire Pro architecture for free!
 
+- **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI! Watchers run automatically in the background.
 - **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
 - **In-App Feedback** — Built-in feedback modal allowing you to report bugs or request features directly from the dashboard.
 - **Onboarding Wizard** — First-time user overlay walkthrough for CLI commands and dashboard capabilities.
