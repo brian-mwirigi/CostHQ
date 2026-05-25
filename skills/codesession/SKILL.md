@@ -1,6 +1,6 @@
 ---
 name: codesession
-description: Track agent session costs, file changes, and git commits with codesession-cli. Enforces budget limits and provides detailed session analytics with a web dashboard. v2.0.0 - Alerts dashboard, start fresh, insights page.
+description: Track agent session costs, file changes, and git commits with codesession-cli. Enforces budget limits and provides detailed session analytics with a web dashboard. v3.0.3 - Added Console UI, Pro features unlocked, updated NPM links.
 metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/codesession-cli", "requires": {"bins": ["cs"]}, "install": [{"id": "npm", "kind": "node", "package": "codesession-cli", "bins": ["cs"], "label": "Install codesession-cli (npm)"}]}}
 ---
 
@@ -8,7 +8,7 @@ metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/codesessio
 
 Track agent session costs, file changes, and git commits. Enforces budget limits and provides detailed session analytics with a full web dashboard.
 
-**Latest: v2.0.0** - Alerts dashboard, start fresh, insights page, alarm mode.
+**Latest: v3.0.3** - Console dashboard UI, unlocked Pro architecture, updated NPM links.
 
 📦 [npm](https://www.npmjs.com/package/codesession-cli) • ⭐ [GitHub](https://github.com/brian-mwirigi/codesession-cli) • 📝 [Changelog](https://github.com/brian-mwirigi/codesession-cli/blob/main/CHANGELOG.md)
 
@@ -191,7 +191,7 @@ npm view codesession-cli version  # latest on npm
 ```
 
 If the installed version is behind, notify the user:
-> "codesession-cli update available: v1.9.4 -> v2.0.0. Run `npm install -g codesession-cli` to update."
+> "codesession-cli update available: v3.0.2 -> v3.0.3. Run `npm install -g codesession-cli` to update."
 
 Don't block the workflow for an update — just inform and continue.
 
