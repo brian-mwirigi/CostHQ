@@ -1,6 +1,6 @@
 {
   "name": "codesession-cli",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "Track AI agent & coding session costs — files, commits, tokens. Free & Pro tiers available. Works with Claude Code and any AI agent.",
   "homepage": "https://www.brianmunene.me/codesession-cli",
   "repository": {
