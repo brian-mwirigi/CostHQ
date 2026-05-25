@@ -12,6 +12,7 @@ const NAV: { page: Page; icon: React.ReactNode; label: string }[] = [
   { page: 'insights', icon: <IconBarChart size={16} />, label: 'Insights' },
   { page: 'alerts', icon: <IconBell size={16} />, label: 'Alerts' },
   { page: 'share', icon: <IconDownload size={16} />, label: 'Share Stats' },
+  { page: 'console', icon: <IconActivity size={16} />, label: 'Console' },
   { page: 'feedback', icon: <IconMessageSquare size={16} />, label: 'Feedback' },
   { page: 'upgrade', icon: <IconKey size={16} />, label: 'License' },
   { page: 'donate', icon: <IconHeart size={16} />, label: 'Donate' },

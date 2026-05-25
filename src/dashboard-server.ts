@@ -14,9 +14,11 @@ import {
   getDailyTokens, getCostVelocity, getProjectBreakdown, getTokenRatios,
   getSession, getCommits, clearAllData,
   addFeedback, getFeedback,
+  createSession, endSession, addAIUsage, getActiveSessionForDir
 } from './db';
-import { getGitDiff, getCommitDiff, getGitDiffStats } from './git';
+import { getGitDiff, getCommitDiff, getGitDiffStats, getGitRoot, getGitHead, initGit, startGitPolling, stopGitPolling } from './git';
 import { getLicense, activateLicense, deactivateLicense } from '../pro/src/license';
+import { startWatcher, stopWatcher } from './watcher';
 
 interface DashboardOptions {
   port?: number;
@@ -482,6 +484,98 @@ export function buildApiRouter(): Router {
       res.json(getFeedback(100));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Console API ──────────────────────────────────────────
+
+  router.post('/console/start', async (req, res) => {
+    try {
+      const { name, directory } = req.body;
+      if (!name || !directory) return res.status(400).json({ error: 'Name and directory are required' });
+
+      const gitRoot = await getGitRoot(directory);
+      const scopeDir = gitRoot || directory;
+
+      const sameDir = getActiveSessionForDir(scopeDir);
+      if (sameDir) {
+        return res.status(400).json({ error: `Session "${sameDir.name}" is already active for this directory.` });
+      }
+
+      const startHead = await getGitHead(scopeDir);
+      const sessionId = createSession({
+        name,
+        startTime: new Date().toISOString(),
+        workingDirectory: scopeDir,
+        gitRoot: gitRoot || undefined,
+        startGitHead: startHead || undefined,
+        filesChanged: 0,
+        commits: 0,
+        aiCost: 0,
+        aiTokens: 0,
+        status: 'active',
+      });
+
+      initGit(sessionId, scopeDir);
+      startWatcher(sessionId, scopeDir);
+      startGitPolling(sessionId, 10000);
+
+      res.json({ success: true, sessionId });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.post('/console/log-ai', (req, res) => {
+    try {
+      const { provider, model, tokens, promptTokens, completionTokens, cost, agent } = req.body;
+      const session = getActiveSessions()[0];
+      if (!session) return res.status(400).json({ error: 'No active session' });
+
+      let finalCost = cost;
+      if (finalCost === undefined || finalCost === null) {
+        const totalTokens = tokens || ((promptTokens || 0) + (completionTokens || 0));
+        const promptTk = promptTokens ?? totalTokens * 0.7;
+        const completionTk = completionTokens ?? totalTokens * 0.3;
+        const pricing = loadPricing();
+        const entry = pricing[`${provider}/${model}`] || pricing[model];
+        if (entry) {
+          finalCost = (promptTk * entry.input + completionTk * entry.output) / 1_000_000;
+        } else {
+          return res.status(400).json({ error: `Unknown model "${model}". Please provide cost manually.` });
+        }
+      }
+
+      addAIUsage({
+        sessionId: session.id!,
+        provider,
+        model,
+        tokens: tokens || ((promptTokens || 0) + (completionTokens || 0)),
+        promptTokens: promptTokens || undefined,
+        completionTokens: completionTokens || undefined,
+        cost: finalCost,
+        agentName: agent,
+        timestamp: new Date().toISOString(),
+      });
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.post('/console/end', (req, res) => {
+    try {
+      const session = getActiveSessions()[0];
+      if (!session) return res.status(400).json({ error: 'No active session' });
+
+      stopWatcher(session.id!);
+      stopGitPolling(session.id!);
+      endSession(session.id!, new Date().toISOString(), 'Ended from console');
+
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
     }
   });
 

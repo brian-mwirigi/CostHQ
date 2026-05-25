@@ -1,4 +1,4 @@
-const { trackedAI } = require('./dist/wrappers');
+const { trackedAI } = require('./dist/src/wrappers');
 const Database = require('better-sqlite3');
 const { join } = require('path');
 const os = require('os');

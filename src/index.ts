@@ -822,12 +822,14 @@ program
     }
 
     // Read hook input from stdin
-    let raw = '';
-    try {
-      raw = fs.readFileSync(process.stdin.fd, 'utf8');
-    } catch {
-      process.exit(0);
-    }
+    let raw = await new Promise<string>((resolve) => {
+      let data = '';
+      const timer = setTimeout(() => resolve(data), 500);
+      process.stdin.setEncoding('utf8');
+      process.stdin.on('data', chunk => { data += chunk; });
+      process.stdin.on('end', () => { clearTimeout(timer); resolve(data); });
+      process.stdin.resume();
+    });
 
     if (!raw.trim()) process.exit(0);
 

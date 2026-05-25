@@ -12,9 +12,10 @@ import Feedback from './components/Feedback';
 import ShareCard from './components/ShareCard';
 import Onboarding from './components/Onboarding';
 import Banner from './components/Banner';
+import Console from './components/Console';
 import { LicenseProvider } from '../../pro/dashboard/LicenseContext';
 
-export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share';
+export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share' | 'console';
 
 // ── URL-based routing (no react-router needed) ─────────────
 
@@ -32,6 +33,7 @@ function parseRoute(): { page: Page; sessionId: number | null } {
   if (path === '/donate') return { page: 'donate', sessionId: null };
   if (path === '/feedback') return { page: 'feedback', sessionId: null };
   if (path === '/share') return { page: 'share', sessionId: null };
+  if (path === '/console') return { page: 'console', sessionId: null };
   return { page: 'overview', sessionId: null };
 }
 
@@ -125,6 +127,8 @@ export default function App() {
             <LicenseSettings />
           ) : page === 'donate' ? (
             <Donate />
+          ) : page === 'console' ? (
+            <Console />
           ) : (
             <ModelBreakdown />
           )}
