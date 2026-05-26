@@ -101,17 +101,6 @@ export default function LicenseSettings() {
             </ul>
             <a href={UPGRADE_URL} target="_blank" rel="noreferrer" className="modal-btn modal-btn--primary">Get Pro</a>
           </div>
-          <div className="tier-card">
-            <h3>Enterprise</h3>
-            <p className="tier-price">$19 <span>/ seat (lifetime)</span></p>
-            <ul>
-              <li>Everything in Pro</li>
-              <li>Volume discount (min 5)</li>
-              <li>Team management</li>
-              <li>Priority support</li>
-            </ul>
-            <a href={UPGRADE_URL} target="_blank" rel="noreferrer" className="modal-btn">Contact Us</a>
-          </div>
         </div>
       )}
 

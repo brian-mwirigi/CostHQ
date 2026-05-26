@@ -30,13 +30,10 @@
 
 ## What's New in v3.0.0 (The Pro Unlock)
 
-We've completely overhauled the UI, added new sharing tools, and unlocked the entire Pro architecture for free!
-
-- **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI! Watchers run automatically in the background.
-- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
+- **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI! Watchers run automatically in the background. (Pro feature)
+- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats. (Pro feature)
 - **In-App Feedback** — Built-in feedback modal allowing you to report bugs or request features directly from the dashboard.
 - **Onboarding Wizard** — First-time user overlay walkthrough for CLI commands and dashboard capabilities.
-- **Pro Features Unlocked** — The entire Pro tier architecture (including Alerts, Share Cards, and Insights) is now completely free and unlocked by default.
 - **Massive Performance Boosts** — SQLite performance indexes added, `simple-git` instances are now cached, and `puppeteer` was removed from production dependencies making installs significantly faster.
 
 ## What's New in v2.1.0 (The API Tracking Pivot)
