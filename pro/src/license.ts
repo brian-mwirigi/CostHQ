@@ -1,17 +1,11 @@
-import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
-export const LICENSE_PUBLIC_KEY = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEAHPCY4gnBUFQz9PRpWciuKmrZEMeOuIA2DSSoBDxMnbk=
------END PUBLIC KEY-----`;
-
 export interface LicensePayload {
-  email: string;
+  email: string | null;
   plan: 'pro' | 'enterprise';
   seats: number;
-  issuedAt: string;
   expiresAt: string | null;
 }
 
@@ -24,30 +18,6 @@ export interface LicenseInfo {
     active: boolean;
     daysRemaining: number;
   };
-}
-
-export function validateLicenseKey(key: string): LicensePayload | null {
-  try {
-    if (!key.startsWith('CS-PRO-') && !key.startsWith('CS-ENT-')) return null;
-
-    const parts = key.split('-');
-    const payloadAndSig = parts.slice(2).join('-');
-    const [payloadB64, sigB64] = payloadAndSig.split('.');
-
-    if (!payloadB64 || !sigB64) return null;
-
-    const payloadStr = Buffer.from(payloadB64, 'base64url').toString('utf8');
-    const signature = Buffer.from(sigB64, 'base64url');
-
-    const publicKey = crypto.createPublicKey(LICENSE_PUBLIC_KEY);
-    const isValid = crypto.verify(null, Buffer.from(payloadStr), publicKey, signature);
-
-    if (!isValid) return null;
-
-    return JSON.parse(payloadStr) as LicensePayload;
-  } catch {
-    return null;
-  }
 }
 
 function getLicensePath() {
@@ -97,16 +67,13 @@ export function getLicense(): LicenseInfo {
 
   try {
     const data = JSON.parse(fs.readFileSync(licensePath, 'utf8'));
-    if (!data.key) return defaultInfo;
-
-    const payload = validateLicenseKey(data.key);
-    if (!payload) return defaultInfo;
+    if (!data.key || !data.instanceId) return defaultInfo;
 
     return {
       valid: true,
-      plan: payload.plan,
-      email: payload.email,
-      seats: payload.seats || 1,
+      plan: data.plan || 'pro',
+      email: data.email || null,
+      seats: data.seats || 1,
       trial
     };
   } catch {
@@ -114,32 +81,62 @@ export function getLicense(): LicenseInfo {
   }
 }
 
-export function activateLicense(key: string) {
-  const payload = validateLicenseKey(key);
-  if (!payload) return { success: false, error: 'Invalid license key' };
-
+export async function activateLicense(key: string) {
   try {
+    const params = new URLSearchParams();
+    params.append('license_key', key);
+    params.append('instance_name', os.hostname());
+
+    const response = await fetch('https://api.lemonsqueezy.com/v1/licenses/activate', {
+      method: 'POST',
+      headers: { 'Accept': 'application/json' },
+      body: params
+    });
+
+    const result = await response.json() as any;
+
+    if (!response.ok || result.error || !result.activated) {
+      return { success: false, error: result.error || 'Invalid license key' };
+    }
+
     const licensePath = getLicensePath();
     fs.mkdirSync(path.dirname(licensePath), { recursive: true });
+    
+    const email = result.meta?.customer_email || null;
+    const plan = 'pro'; // Defaulting to pro since Lemon Squeezy doesn't explicitly return our 'plan' string natively, we only sell pro on LS
+
     fs.writeFileSync(licensePath, JSON.stringify({
       key,
-      email: payload.email,
-      plan: payload.plan,
+      instanceId: result.instance.id,
+      email,
+      plan,
       activatedAt: new Date().toISOString()
     }, null, 2));
     
-    return { success: true, license: payload };
+    return { success: true, license: { email, plan, seats: 1 } };
   } catch (err: any) {
-    return { success: false, error: err.message || 'Failed to save license' };
+    return { success: false, error: err.message || 'Failed to activate license online' };
   }
 }
 
-export function deactivateLicense() {
+export async function deactivateLicense() {
   try {
     const licensePath = getLicensePath();
-    if (fs.existsSync(licensePath)) {
-      fs.unlinkSync(licensePath);
+    if (!fs.existsSync(licensePath)) return;
+
+    const data = JSON.parse(fs.readFileSync(licensePath, 'utf8'));
+    if (data.key && data.instanceId) {
+      const params = new URLSearchParams();
+      params.append('license_key', data.key);
+      params.append('instance_id', data.instanceId);
+
+      await fetch('https://api.lemonsqueezy.com/v1/licenses/deactivate', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        body: params
+      });
     }
+    fs.unlinkSync(licensePath);
   } catch {}
 }
 

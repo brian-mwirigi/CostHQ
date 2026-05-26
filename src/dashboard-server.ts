@@ -167,20 +167,20 @@ export function buildApiRouter(): Router {
     }
   });
 
-  router.post('/license/activate', (req, res) => {
+  router.post('/license/activate', async (req, res) => {
     try {
       const { key } = req.body;
       if (!key) return res.status(400).json({ success: false, error: 'Key is required' });
-      const result = activateLicense(key);
+      const result = await activateLicense(key);
       res.json(result);
     } catch (e: any) {
       res.status(500).json({ success: false, error: e.message });
     }
   });
 
-  router.post('/license/deactivate', (_req, res) => {
+  router.post('/license/deactivate', async (_req, res) => {
     try {
-      deactivateLicense();
+      await deactivateLicense();
       res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ success: false, error: e.message });

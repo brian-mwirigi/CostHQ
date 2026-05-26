@@ -939,13 +939,13 @@ program
   .command('activate <key>')
   .description('Activate a Pro or Enterprise license key')
   .option('--json', 'JSON output')
-  .action((key: string, options: any) => {
-    const result = activateLicense(key);
+  .action(async (key: string, options: any) => {
+    const result = await activateLicense(key);
     if (options.json) {
       console.log(JSON.stringify(jsonWrap(result)));
     } else if (result.success) {
       console.log(chalk.green(`\nLicense activated successfully!`));
-      console.log(chalk.gray(`  Plan:  ${result.license?.plan.toUpperCase()}`));
+      console.log(chalk.gray(`  Plan:  ${result.license?.plan?.toUpperCase()}`));
       console.log(chalk.gray(`  Email: ${result.license?.email}`));
       if (result.license?.plan === 'enterprise') {
         console.log(chalk.gray(`  Seats: ${result.license?.seats}`));
@@ -960,8 +960,8 @@ program
   .command('deactivate')
   .description('Remove the current license key')
   .option('--json', 'JSON output')
-  .action((options: any) => {
-    deactivateLicense();
+  .action(async (options: any) => {
+    await deactivateLicense();
     if (options.json) {
       console.log(JSON.stringify(jsonWrap({ success: true })));
     } else {
