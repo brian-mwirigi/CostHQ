@@ -13,7 +13,61 @@
         "groups": [
           {
             "group": "Get Started",
-            "pages": ["introduction"]
+            "pages": [
+              "introduction",
+              "quickstart",
+              "installation",
+              "index"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/data-storage",
+              "configuration/pricing",
+              "configuration/pro-license"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard/overview",
+              "dashboard/budget-alerts"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/claude-code",
+              "integrations/custom-agents",
+              "integrations/openclaw"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/agent-session",
+              "reference/cli-overview",
+              "reference/error-codes",
+              "reference/export-stats",
+              "reference/extensions",
+              "reference/json-output",
+              "reference/log-ai",
+              "reference/middleware",
+              "reference/session-commands"
+            ]
+          },
+          {
+            "group": "Sources",
+            "pages": []
+          },
+          {
+            "group": "Tracking",
+            "pages": [
+              "tracking/cs-run",
+              "tracking/manual",
+              "tracking/proxy"
+            ]
           }
         ]
       }
