@@ -4,7 +4,7 @@ sidebarTitle: "CLI Overview"
 description: "Complete command list for the CostHQ cs CLI. All commands support --json for machine-readable output and exit code 0 on success, 1 on error."
 ---
 
-The `cs` CLI is the main interface to CostHQ. Installing the `costhq` package globally gives you two aliases — `cs` and `codesession` — that point to the same binary. Every command in this reference works identically with either alias.
+The `cs` CLI is the main interface to CostHQ. Installing the `costhq` package globally gives you two binaries — `costhq` and `cs` — that point to the same interface. Every command in this reference works identically with either binary.
 
 ## All Commands
 
@@ -29,7 +29,7 @@ The `cs` CLI is the main interface to CostHQ. Installing the `costhq` package gl
 | `cs run [--name] [--port] [--no-proxy] <command>` | Wrap a command with full session lifecycle |
 | `cs proxy [--port] [-s/--session <name>]` | Start local API proxy |
 | `cs budget [--daily <amount>] [--session <amount>]` | Configure spend alerts |
-| `cs mcp` | Start MCP server |
+
 | `cs auto-log [--provider] [--model] [--agent]` | Auto-log from Claude Code transcript |
 
 ## Global Flags

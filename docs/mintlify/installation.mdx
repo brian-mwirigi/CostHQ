@@ -24,7 +24,7 @@ CostHQ requires **Node.js 16 or later** and installs as a global npm package. Th
     If prebuilt binaries are available for your platform and Node.js version, npm downloads them directly and skips compilation entirely.
   </Step>
   <Step title="Install CostHQ globally">
-    Run the global install command. This installs the `cs`, `codesession`, and `codesession-mcp` binaries on your PATH.
+    Run the global install command. This installs the `costhq` and `cs` binaries on your PATH.
 
     <CodeGroup>
 
@@ -47,19 +47,18 @@ CostHQ requires **Node.js 16 or later** and installs as a global npm package. Th
 
 ## Binaries Installed
 
-Installing `costhq` places three binaries on your system:
+Installing `costhq` places two binaries on your system:
 
 | Binary | Purpose |
 | --- | --- |
-| `cs` | Main CLI — all session and tracking commands |
-| `codesession` | Alias for `cs` |
-| `codesession-mcp` | MCP server for Claude Code integration |
+| `costhq` | Main CLI — all session and tracking commands |
+| `cs` | Alias for `costhq` |
 
-Use `cs` for day-to-day work. Use `codesession-mcp` when [configuring Claude Code's MCP settings](/integrations/claude-code).
+Use `cs` for day-to-day work.
 
 ## Custom Database Path
 
-By default, CostHQ stores all session data in `~/.CostHQ/sessions.db`. Set the `CODESESSION_DB_PATH` environment variable to use a different location — useful for test isolation or keeping separate databases per project.
+By default, CostHQ stores all session data in `~/.codesession/sessions.db`. Set the `CODESESSION_DB_PATH` environment variable to use a different location — useful for test isolation or keeping separate databases per project.
 
 ```bash
 # macOS / Linux
@@ -75,7 +74,7 @@ The database file and its parent directory are created automatically on first us
 
 | Platform | Default path |
 | --- | --- |
-| macOS / Linux | `~/.CostHQ/sessions.db` |
-| Windows | `C:\Users\<username>\.CostHQ\sessions.db` |
+| macOS / Linux | `~/.codesession/sessions.db` |
+| Windows | `C:\Users\<username>\.codesession\sessions.db` |
 
 You're all set. Continue to [Quick Start](/quickstart) to track your first session.
