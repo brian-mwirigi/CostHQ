@@ -1,0 +1,9 @@
+{
+  "name": "CostHQ",
+  "navigation": [
+    {
+      "group": "Get Started",
+      "pages": ["introduction"]
+    }
+  ]
+}
