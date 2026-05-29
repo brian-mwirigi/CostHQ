@@ -634,7 +634,7 @@ program
         console.log(chalk.red('You must specify a session ID to export as PDF (e.g., cs export 123 --format pdf)'));
         return;
       }
-      const { exportSessionToPDF } = require('./pdf-export');
+      const { exportSessionToPDF } = require('../pro/src/pdf-export');
       exportSessionToPDF(parseInt(id, 10));
     } else {
       const format = options.format === 'csv' ? 'csv' : 'json';
