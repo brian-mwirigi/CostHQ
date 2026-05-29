@@ -1,7 +1,7 @@
 ---
 name: costhq
 license: MIT-0
-description: Track agent session costs, file changes, and git commits with costhq. Enforces budget limits and provides detailed session analytics with a web dashboard. v3.0.3 - Added Console UI, Pro features unlocked, updated NPM links.
+description: Track agent session costs, file changes, and git commits with costhq. Enforces budget limits and provides detailed session analytics with a web dashboard. v3.2.0 - Complete rebrand to CostHQ, Emerald Glassmorphism Dashboard, Pro Tier locked in Submodule.
 metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/costhq", "requires": {"bins": ["cs"]}, "install": [{"id": "npm", "kind": "node", "package": "costhq", "bins": ["cs"], "label": "Install costhq (npm)"}]}}
 ---
 
@@ -9,7 +9,7 @@ metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/costhq", "
 
 Track agent session costs, file changes, and git commits. Enforces budget limits and provides detailed session analytics with a full web dashboard.
 
-**Latest: v3.0.3** - Console dashboard UI, unlocked Pro architecture, updated NPM links.
+**Latest: v3.2.0** - Complete rebrand to CostHQ, Emerald Glassmorphism Dashboard, Pro Tier locked in Submodule.
 
 📦 [npm](https://www.npmjs.com/package/costhq) • ⭐ [GitHub](https://github.com/brian-mwirigi/costhq) • 📝 [Changelog](https://github.com/brian-mwirigi/costhq/blob/main/CHANGELOG.md)
 
