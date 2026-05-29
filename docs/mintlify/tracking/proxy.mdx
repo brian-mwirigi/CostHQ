@@ -1,0 +1,78 @@
+---
+title: "CostHQ Local Proxy for Automatic API Cost Tracking"
+sidebarTitle: "Local Proxy"
+description: "cs proxy start runs a local HTTP proxy at port 3739 that intercepts Anthropic and OpenAI API calls and logs them to the active session automatically."
+---
+
+The CostHQ local proxy sits between your tools and the AI APIs. Any process that routes its Anthropic or OpenAI traffic through the proxy has every call automatically logged to the active session — no code changes, no SDK wrappers, no manual `cs log-ai` calls required.
+
+## Start the proxy
+
+```bash
+cs proxy start
+# default address: http://127.0.0.1:3739
+```
+
+<Note>
+  When the proxy starts, it prints the correct environment variable syntax for your OS automatically — you can copy and paste directly from the terminal output.
+</Note>
+
+## Options
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--port <port>` | `3739` | Port to listen on |
+
+## Configure your tools
+
+Point your tools at the proxy by setting the base URL environment variables. The proxy uses path prefixes to route traffic to the correct upstream provider.
+
+<Tabs>
+  <Tab title="Mac / Linux">
+    ```bash
+    export ANTHROPIC_BASE_URL=http://127.0.0.1:3739/anthropic/v1
+    export OPENAI_BASE_URL=http://127.0.0.1:3739/openai/v1
+    ```
+  </Tab>
+  <Tab title="Windows PowerShell">
+    ```powershell
+    $env:ANTHROPIC_BASE_URL = "http://127.0.0.1:3739/anthropic/v1"
+    $env:OPENAI_BASE_URL   = "http://127.0.0.1:3739/openai/v1"
+    ```
+  </Tab>
+</Tabs>
+
+## Proxy health check
+
+Verify the proxy is running and see which session is currently active:
+
+```text
+GET http://127.0.0.1:3739/health
+```
+
+The endpoint returns a JSON object with the proxy status and active session metadata. Use this to confirm the proxy is reachable before starting a long agent run.
+
+## Security
+
+The proxy is designed to be safe to run locally without additional configuration:
+
+- **Loopback-only binding** — the proxy binds to `127.0.0.1` exclusively and is not accessible to other machines on your network.
+- **Hardcoded upstream hosts** — traffic is forwarded only to `api.anthropic.com` and `api.openai.com`; server-side request forgery (SSRF) is not possible.
+- **No credential storage** — `Authorization` headers are forwarded to the upstream API as-is and are never written to disk or logged.
+- **10 MB response cap** — upstream response bodies are capped at 10 MB in non-streaming mode to prevent memory exhaustion.
+- **30-second upstream timeout** — requests that take longer than 30 seconds are cancelled.
+- **Non-loopback connections refused** — any connection attempt from outside `127.0.0.1` receives a `403` response immediately.
+- **No internal stack traces** — upstream failures return a generic error response; no internal error details are exposed to the caller.
+
+## Using the proxy with manual sessions
+
+You can pair `cs proxy start` with `cs start` and `cs end` to combine manual session control with automatic API cost capture. Start the proxy in a separate terminal while your session is active:
+
+```bash
+cs start "Build recommendation engine"
+cs proxy start   # in a separate terminal
+# ... code with your AI tools pointing at the proxy URLs above ...
+cs end
+```
+
+All API calls routed through the proxy are logged to the active session automatically. See [Manual Tracking](/tracking/manual) for details on session boundaries.

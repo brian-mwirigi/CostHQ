@@ -1,0 +1,56 @@
+---
+title: "CostHQ CLI Reference: All cs Commands and Global Flags"
+sidebarTitle: "CLI Overview"
+description: "Complete command list for the CostHQ cs CLI. All commands support --json for machine-readable output and exit code 0 on success, 1 on error."
+---
+
+The `cs` CLI is the main interface to CostHQ. Installing the `costhq` package globally gives you two aliases — `cs` and `codesession` — that point to the same binary. Every command in this reference works identically with either alias.
+
+## All Commands
+
+| Command | Description |
+| --- | --- |
+| `cs start <name>` | Start tracking a session |
+| `cs start --resume` | Resume existing session for current directory |
+| `cs start --close-stale` | Auto-close orphaned sessions, then start |
+| `cs end [-n notes] [-s id]` | End session |
+| `cs status [-s id]` | Show active session |
+| `cs show [id] [--files] [--commits]` | Show session details |
+| `cs list [-l limit]` | List recent sessions |
+| `cs stats` | Overall statistics |
+| `cs log-ai -p <provider> -m <model> [opts]` | Log AI usage |
+| `cs note <message> [-s id]` | Add annotation |
+| `cs recover [--max-age hours]` | Auto-end stale sessions |
+| `cs export [--format json|csv] [--limit n]` | Export sessions |
+| `cs dashboard [--port] [--host] [--no-open]` | Open web analytics dashboard |
+| `cs pricing list` | Show model prices |
+| `cs pricing set <model> <in> <out> [--provider]` | Set custom pricing per 1M tokens |
+| `cs pricing reset` | Remove custom price overrides |
+| `cs run [--name] [--port] [--no-proxy] <command>` | Wrap a command with full session lifecycle |
+| `cs proxy [--port] [-s/--session <name>]` | Start local API proxy |
+| `cs budget [--daily <amount>] [--session <amount>]` | Configure spend alerts |
+| `cs mcp` | Start MCP server |
+| `cs auto-log [--provider] [--model] [--agent]` | Auto-log from Claude Code transcript |
+
+## Global Flags
+
+| Flag | Behavior |
+| --- | --- |
+| `--json` | Return machine-readable JSON instead of formatted table output |
+
+All `--json` responses include two metadata fields at the top level:
+
+- **`schemaVersion`** — currently `1`. Check this field before parsing; if it is higher than expected, degrade gracefully rather than silently breaking.
+- **`CostHQVersion`** — the installed version string (e.g. `"3.1.1"`).
+
+Exit codes are unambiguous: `0` on success, `1` on any error — including in `--json` mode.
+
+## Session Scoping
+
+CostHQ scopes sessions by **git root**, not by the exact directory from which you ran `cs start`. If you run `cs start` from `repo/apps/web`, the session's working directory resolves to the repository root (e.g. `repo/`). This prevents accidental session fragmentation when agents or humans invoke commands from different subdirectories of the same repository.
+
+If you are not inside a git repository, CostHQ uses the exact current working directory as-is. The resolved scope is visible in the `gitRoot` field of `cs status --json`.
+
+<Tip>
+  Use `cs start --close-stale` in automation scripts to avoid `session_active` errors caused by crashed agents that left an open session behind.
+</Tip>

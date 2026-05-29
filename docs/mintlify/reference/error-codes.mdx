@@ -1,0 +1,109 @@
+---
+title: "CostHQ CLI Error Codes and Exit Code Reference"
+sidebarTitle: "Error Codes"
+description: "CostHQ always exits with code 1 on error, even in --json mode. Parse error.code programmatically — never string-compare error.message."
+---
+
+All CostHQ errors follow a consistent JSON shape so your agent scripts can handle them programmatically without brittle string matching. Whether a command fails because there is no active session or because a model is unknown, the structure is always the same — only `error.code` changes.
+
+## Error Shape
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "error": {
+    "code": "no_active_session",
+    "message": "No active session"
+  }
+}
+```
+
+The `schemaVersion` and `CostHQVersion` fields are present on every response, including errors. Parse `error.code` to branch your logic. Never branch on `error.message` — it is human-readable prose that may change between versions.
+
+## Exit Codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success |
+| `1` | Error (always, including in `--json` mode) |
+
+There is no ambiguity: any non-zero exit code means the command failed and an `error` object is present in the JSON output.
+
+## Error Codes
+
+| Code | When it occurs | How to handle |
+| --- | --- | --- |
+| `session_active` | `cs start` called while a session is already running | Use `--close-stale` to auto-close the stale session, or `--resume` to continue it |
+| `no_active_session` | `cs end` or `cs log-ai` called with no active session | Run `cs status --json` first to confirm session state |
+| `session_not_found` | `cs show` or `cs end -s <id>` called with an invalid session ID | Verify the ID with `cs list --json` |
+| `missing_tokens` | `cs log-ai` called without token counts or a manual cost | Provide `--prompt-tokens` \+ `--completion-tokens`, or `-c <cost>` |
+| `unknown_model` | Model is not in the built-in pricing table and no `-c` flag was given | Add `-c <cost>` explicitly, or register custom pricing with `cs pricing set` |
+
+## Parsing Error Codes
+
+```typescript
+import { execSync } from 'child_process';
+
+let output: string;
+try {
+  output = execSync('cs status --json', { encoding: 'utf8' });
+} catch (err: any) {
+  output = err.stdout; // --json errors still write to stdout, exit code 1
+}
+
+const result = JSON.parse(output);
+if (result.error) {
+  switch (result.error.code) {
+    case 'session_active':
+      // Handle already-running session
+      break;
+    case 'no_active_session':
+      // Start a session first
+      break;
+    case 'session_not_found':
+      // Verify the session ID
+      break;
+  }
+}
+```
+
+<Note>
+  When a command exits with code `1`, `execSync` throws. The error object's `.stdout` property still contains the full `--json` error payload — read it from there, not from `stderr`.
+</Note>
+
+## Failsafe Pattern for Agents
+
+Check that `cs` is installed before attempting any tracking. If it is absent, skip gracefully rather than blocking your agent's primary task.
+
+```bash
+# Check cs is installed before any tracking (Linux / macOS)
+which cs >/dev/null 2>&1 || { echo "costhq not installed, skipping tracking"; exit 0; }
+
+# Windows equivalent
+where cs >nul 2>&1 || (echo costhq not installed, skipping tracking && exit /b 0)
+```
+
+The same check in Node.js:
+
+```typescript
+import { execSync } from 'child_process';
+
+function isCostHQInstalled(): boolean {
+  try {
+    const cmd = process.platform === 'win32' ? 'where cs' : 'which cs';
+    execSync(cmd, { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+if (!isCostHQInstalled()) {
+  console.warn('costhq not installed — skipping session tracking');
+}
+```
+
+<Warning>
+  Never string-compare `error.message`. The human-readable message text may change between CostHQ versions. Always branch on `error.code`, which is part of the stable contract.
+</Warning>

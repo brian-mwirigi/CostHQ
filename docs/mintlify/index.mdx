@@ -1,0 +1,78 @@
+---
+title: "CostHQ: Know What Your AI Agents Actually Cost"
+sidebarTitle: "Home"
+description: "CostHQ tracks AI agent sessions, token spend, file changes, and git commits — locally, with zero telemetry. Free CLI, Node.js SDK, and web dashboard."
+---
+
+CostHQ gives you full visibility into what every AI agent run costs. Install the CLI, wrap your agent command with `cs run`, and instantly see duration, files touched, commits made, and exact API spend — all stored locally in SQLite, nothing sent to the cloud.
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install CostHQ with a single npm command and get tracking in under two minutes.
+  </Card>
+
+  <Card title="Quick Start" icon="bolt" href="/quickstart">
+    Track your first agent session and open the dashboard in three steps.
+  </Card>
+
+  <Card title="Integrations" icon="plug" href="/integrations/openclaw">
+    Connect CostHQ to OpenClaw, Claude Code, or any custom agent framework.
+  </Card>
+
+  <Card title="CLI Reference" icon="terminal" href="/reference/cli-overview">
+    Every command, flag, and JSON output schema in one place.
+  </Card>
+</CardGroup>
+
+## How CostHQ works
+
+CostHQ intercepts AI API calls through a local proxy and records them to a SQLite database on your machine. You never send data anywhere — there is no account, no cloud sync, and no telemetry.
+
+<Steps>
+  <Step title="Install the CLI">
+    ```bash
+    npm install -g costhq
+    ```
+
+    This gives you the `cs` command plus the `codesession-mcp` binary for Claude Code.
+  </Step>
+  <Step title="Track a session">
+    ```bash
+    cs run python my_agent.py
+    ```
+
+    CostHQ starts a session, spins up the local proxy, runs your command, and prints a cost summary when the process exits.
+  </Step>
+  <Step title="Open the dashboard">
+    ```bash
+    cs dashboard
+    ```
+
+    A local web UI opens at `http://localhost:3737` showing cost trends, model usage, session history, and budget alerts.
+  </Step>
+</Steps>
+
+## What gets tracked
+
+| Signal | How it's captured |
+| --- | --- |
+| **AI tokens & cost** | Local proxy intercepts Anthropic and OpenAI API calls |
+| **Session duration** | Start/end timestamps with millisecond precision |
+| **File changes** | Filesystem watcher scoped to the repo root |
+| **Git commits** | Polling `git log` every 10 seconds during the session |
+
+## Free vs Pro
+
+<CardGroup cols={2}>
+  <Card title="Free" icon="circle-check">
+    Full CLI, built-in pricing for 42\+ models, local SQLite database, git integration, basic dashboard, session history, and budget alerts.
+  </Card>
+
+  <Card title="Pro — $12/month" icon="star" href="/configuration/pro-license">
+    Spend Firewall, runaway agent alerts, shareable stats card, CSV export, activity heatmaps, file hotspots, and advanced analytics.
+  </Card>
+</CardGroup>
+
+<Note>
+  All data is stored in `~/.CostHQ/sessions.db` on your machine. CostHQ never phones home and never stores your API keys.
+</Note>

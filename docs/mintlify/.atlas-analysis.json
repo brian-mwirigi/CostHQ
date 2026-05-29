@@ -1,0 +1,131 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "CostHQ",
+  "projectDescription": "A CLI and Node.js library that tracks what your AI agents and coding sessions actually cost — capturing session duration, file changes, git commits, and AI token spend across OpenAI, Anthropic, and other providers.",
+  "theme": "luma",
+  "primaryColor": "#22c55e",
+  "lightColor": "#dcfce7",
+  "darkColor": "#15803d",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Tracking Methods",
+            "pages": [
+              "tracking/cs-run",
+              "tracking/proxy",
+              "tracking/manual"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/openclaw",
+              "integrations/claude-code",
+              "integrations/custom-agents"
+            ]
+          },
+          {
+            "group": "Dashboard",
+            "pages": [
+              "dashboard/overview",
+              "dashboard/budget-alerts"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/pricing",
+              "configuration/data-storage",
+              "configuration/pro-license"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "CLI Commands",
+            "pages": [
+              "reference/cli-overview",
+              "reference/session-commands",
+              "reference/log-ai",
+              "reference/export-stats"
+            ]
+          },
+          {
+            "group": "Node.js SDK",
+            "pages": [
+              "reference/agent-session",
+              "reference/extensions",
+              "reference/middleware"
+            ]
+          },
+          {
+            "group": "Agent Contract",
+            "pages": [
+              "reference/json-output",
+              "reference/error-codes"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "One-command session tracking with cs run — handles full lifecycle automatically",
+    "Local HTTP proxy that intercepts Anthropic and OpenAI API calls and logs them automatically",
+    "OpenClaw skill and Claude Code hook integration for zero-touch agent tracking",
+    "Web dashboard at localhost:3737 with cost charts, model breakdown, and session analytics",
+    "Budget alerts with per-session and daily spend limits, alarm mode with browser notifications",
+    "Drop-in Node.js SDK extensions: TrackedOpenAI, TrackedAnthropic, TrackedGoogleAI",
+    "Built-in pricing for 42+ models including Claude, OpenAI GPT, Codex, DeepSeek, and Cohere",
+    "Git commit tracking and filesystem watcher for automatic file change detection",
+    "100% local SQLite storage — no telemetry, no cloud sync, no API key storage",
+    "JSON output on every command for machine-readable agent integrations",
+    "Pro tier: Spend Firewall, runaway agent alerts, shareable stats card, CSV export, heatmaps"
+  ],
+  "publicApiSurface": [
+    "cs start <description> [--close-stale] [--resume] [--json]",
+    "cs end [-n notes] [-s id] [--json]",
+    "cs run [--name] [--port] [--no-proxy] <command>",
+    "cs proxy [--port] [--session]",
+    "cs status [-s id] [--json]",
+    "cs show [id] [--files] [--commits] [--json]",
+    "cs list [-l limit] [--json]",
+    "cs stats [--json]",
+    "cs log-ai -p <provider> -m <model> [--prompt-tokens] [--completion-tokens] [-t] [-c] [-s id] [--json]",
+    "cs note <message> [-s id] [--json]",
+    "cs recover [--max-age hours]",
+    "cs export [--format json|csv] [--limit n]",
+    "cs dashboard [--port] [--host] [--no-open] [--json]",
+    "cs budget [--daily amount] [--session amount]",
+    "cs pricing list",
+    "cs pricing set <model> <in> <out> [--provider]",
+    "cs pricing reset",
+    "cs mcp",
+    "cs auto-log [--provider] [--model] [--agent]",
+    "AgentSession class (costhq/agents)",
+    "runAgentSession helper (costhq/agents)",
+    "BudgetExceededError (costhq/agents)",
+    "TrackedOpenAI class (costhq/extensions)",
+    "TrackedAnthropic class (costhq/extensions)",
+    "TrackedGoogleAI class (costhq/extensions)",
+    "trackedGPT wrapper (costhq/wrappers)",
+    "trackedClaude wrapper (costhq/wrappers)",
+    "withTracking middleware (costhq/middleware)",
+    "BatchTracker class (costhq/middleware)",
+    "createTrackedClient (costhq/middleware)"
+  ]
+}

@@ -1,0 +1,123 @@
+---
+title: "cs export and cs stats: Export Data and View Totals"
+sidebarTitle: "Export & Stats"
+description: "Use cs export to download session data as JSON or CSV, and cs stats to view aggregate metrics across all sessions including total cost, time, and tokens."
+---
+
+CostHQ lets you export your session history and view lifetime statistics without leaving the terminal. Whether you are generating a client invoice, doing a weekly spend review, or piping data into another tool, `cs export` and `cs stats` give you the numbers you need.
+
+## cs export
+
+```bash
+cs export --format csv
+cs export --format json
+cs export --format json --limit 10
+```
+
+### Options
+
+| Flag | Description |
+| --- | --- |
+| `--format json|csv` | Output format (default: `json`) |
+| `--limit <n>` | Maximum number of sessions to include (most recent first) |
+| `--json` | Machine-readable output (same as `--format json`; included for consistency with other commands) |
+
+### What's Included
+
+Each exported record contains:
+
+- Session ID and name
+- Start and end times
+- Duration
+- Files changed
+- Commits made
+- AI tokens used
+- AI cost (USD)
+- Notes
+
+---
+
+## cs stats
+
+```text
+cs stats [options]
+```
+
+Display aggregate metrics across every session in your history. Use `--json` to pipe results into scripts or dashboards.
+
+| Flag | Description |
+| --- | --- |
+| `--json` | Machine-readable output |
+
+```text
+$ cs stats
+
+Overall Statistics:
+
+┌───────────────────┬──────────┐
+│ Total Sessions    │ 52       │
+│ Total Time        │ 138h 20m │
+│ Average Session   │ 2h 39m   │
+│ Files Changed     │ 412      │
+│ Total Commits     │ 184      │
+│ AI Tokens Used    │ 3.1M     │
+│ Total AI Cost     │ $104.72  │
+└───────────────────┴──────────┘
+```
+
+---
+
+## Use Cases
+
+### Freelance Billing
+
+Pull the exact time and AI spend for a specific piece of work before writing an invoice:
+
+```bash
+cs show        # precise duration and AI cost for the most recent session
+cs show 12     # target a specific session by ID
+```
+
+### Weekly Review
+
+Scan the last twenty sessions and then check lifetime totals:
+
+```bash
+cs list -l 20
+cs stats
+```
+
+### Export Reports
+
+Capture a dated snapshot of recent sessions or overall stats as plain-text files:
+
+```bash
+cs list -l 50 > weekly-report-$(date +%Y%m%d).txt
+cs stats > monthly-stats-$(date +%Y-%m).txt
+```
+
+---
+
+## Advanced: Shell Aliases
+
+Add these aliases to `~/.bashrc` or `~/.zshrc` to cut down on typing for the commands you use most:
+
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+alias csr="cs run"
+alias css="cs start"
+alias cse="cs end"
+alias csl="cs list"
+alias csst="cs stats"
+```
+
+---
+
+## Advanced: Dynamic Session Notes
+
+Capture git context automatically when you end a session so the notes always reflect exactly what changed:
+
+```bash
+cs end -n "Branch: $(git branch --show-current)"
+cs end -n "Made $(git rev-list --count HEAD ^origin/main) commits"
+```

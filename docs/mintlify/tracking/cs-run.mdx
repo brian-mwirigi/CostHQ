@@ -1,0 +1,55 @@
+---
+title: "cs run: Automatic Zero-Config Agent Session Tracking"
+sidebarTitle: "cs run"
+description: "cs run wraps any command with a full session lifecycle: starts a session, spins up the local proxy, runs your command, and prints a cost summary on exit."
+---
+
+`cs run` is the zero-configuration approach to tracking any agent script or one-off command. You hand it a command, and it handles the entire session lifecycle — no environment variable setup, no manual start/end calls, no forgotten sessions.
+
+## How it works
+
+When you run `cs run <command>`, CostHQ executes the following sequence automatically:
+
+1. **Creates a new session** — the session name defaults to the command string you passed (e.g., `python my_agent.py`). Override it with `--name`.
+2. **Starts the local proxy on port 3739** — a lightweight HTTP proxy that sits in front of the Anthropic and OpenAI APIs.
+3. **Launches your command** with `ANTHROPIC_BASE_URL` and `OPENAI_BASE_URL` already pointing at the proxy — no shell exports needed.
+4. **Intercepts and logs all API calls** — every request your command makes to Anthropic or OpenAI is captured and associated with the active session.
+5. **Ends the session and prints a cost summary** — when your command exits (success or failure), CostHQ closes the session and prints duration, file changes, commits, and total AI cost.
+
+## Usage
+
+```bash
+cs run python my_agent.py
+cs run node agent.js
+cs run -- npx my-agent --task "fix the bug"
+```
+
+Use `--` before commands that have their own flags so the shell doesn't try to parse them as `cs run` flags.
+
+## Options
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--name <name>` | command string | Custom session name |
+| `--port <port>` | `3739` | Proxy port |
+| `--no-proxy` | `false` | Skip the proxy; track session time only |
+
+## Example output
+
+When your command exits, CostHQ prints a summary like this:
+
+```text
+  Done  python my_agent.py
+    14m  •  8 files  •  2 commits  •  $1.43 AI cost
+    Top model: claude-3-5-sonnet-20241022
+```
+
+The summary shows elapsed time, the number of files changed and commits made during the session, total AI spend, and the model that accounted for the most usage.
+
+<Tip>
+  Use `--no-proxy` if your API calls already route through a separate proxy or if you are tracking session time only and do not need cost data. When `--no-proxy` is set, `ANTHROPIC_BASE_URL` and `OPENAI_BASE_URL` are left untouched and no proxy process is started.
+</Tip>
+
+## Running the proxy separately
+
+If you need the proxy running independently of a single command — for example, while you work across multiple terminals or editor sessions — see [Local Proxy](/tracking/proxy). You can start the proxy once and leave it running while you use `cs start` and `cs end` to control session boundaries yourself.

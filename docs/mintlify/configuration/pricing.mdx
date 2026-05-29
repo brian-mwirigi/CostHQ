@@ -1,0 +1,119 @@
+---
+title: "Built-In Model Pricing and Custom Pricing in CostHQ"
+sidebarTitle: "Model Pricing"
+description: "CostHQ ships with built-in pricing for 42+ models. Override per-model prices with cs pricing set, or add fine-tuned model pricing namespaced by provider."
+---
+
+CostHQ includes built-in pricing for 42\+ AI models, so you never have to calculate costs manually — just provide prompt and completion tokens when logging an API call and CostHQ computes the dollar cost for you.
+
+## View current pricing
+
+To see every model price currently active (built-in defaults merged with any custom overrides you have set), run:
+
+```bash
+cs pricing list
+```
+
+## Built-in model families
+
+CostHQ ships with pricing for the following models out of the box.
+
+### Anthropic Claude
+
+| Model |
+| --- |
+| `claude-opus-4` |
+| `claude-sonnet-4` |
+| `claude-3-7-sonnet` |
+| `claude-3-5-sonnet-20241022` |
+| `claude-3-5-haiku-20241022` |
+| `claude-3-opus-20240229` |
+| `claude-3-sonnet-20240229` |
+| `claude-3-haiku-20240307` |
+
+### OpenAI
+
+| Model |
+| --- |
+| `gpt-4o` |
+| `gpt-4o-mini` |
+| `gpt-4-turbo` |
+| `gpt-4` |
+| `gpt-3.5-turbo` |
+| `o1` |
+| `o1-mini` |
+| `o3-mini` |
+
+### OpenAI Codex
+
+| Model |
+| --- |
+| `gpt-5.1-codex-max` |
+| `gpt-5.1-codex-mini` |
+| `gpt-5.3-codex` |
+| `codex-mini-latest` |
+
+CostHQ also includes built-in pricing for **DeepSeek**, **Azure OpenAI**, and **Cohere** models (42\+ total). Run `cs pricing list` to see the full table.
+
+## Custom pricing
+
+Use `cs pricing set` to add a new model or override the built-in price for an existing one.
+
+```bash
+# Add or override a model
+cs pricing set my-ft-model 5.00 15.00
+
+# Namespace by provider (prevents collisions)
+cs pricing set gpt-4o 2.50 10.00 --provider openai
+cs pricing set gpt-4o 3.00 12.00 --provider azure
+
+# Reset to defaults
+cs pricing reset
+```
+
+### Command parameters
+
+| Parameter | Description |
+| --- | --- |
+| `<model>` | Model name |
+| `<in>` | Input price per 1 million tokens (USD) |
+| `<out>` | Output price per 1 million tokens (USD) |
+| `--provider <p>` | Optional provider namespace — stores the entry as `provider/model` to prevent name collisions across providers |
+
+## Where custom pricing is stored
+
+Custom prices are saved to `~/.CostHQ/pricing.json` and merged with the built-in defaults at runtime. Deleting this file or running `cs pricing reset` returns all prices to their built-in values.
+
+## Fallback lookup order
+
+When you run `cs log-ai`, CostHQ resolves the model price in this order:
+
+1. `provider/model` (namespaced key, e.g. `azure/gpt-4o`)
+2. Plain `model` name (e.g. `gpt-4o`)
+
+This means namespaced entries always win over generic ones when both exist.
+
+## Unknown models
+
+If you use a model that is not in the pricing table and you have not added a custom price for it, CostHQ cannot calculate the cost automatically. Pass the `-c <cost>` flag to `cs log-ai` to provide the dollar amount manually:
+
+```bash
+cs log-ai -p my-provider -m my-new-model -t 10000 -c 0.12
+```
+
+<Info>
+  **Pricing source transparency** — `cs log-ai --json` returns a `pricing` object that tells you exactly where the price came from:
+
+  ```json
+  {
+    "pricing": {
+      "source": "built-in",
+      "modelKnown": true,
+      "inputPer1M": 3.0,
+      "outputPer1M": 15.0
+    }
+  }
+  ```
+
+  `source` is `"built-in"`, `"custom"`, or `"manual"`. If `modelKnown` is `false`, pass `-c <cost>` explicitly to avoid untracked spend.
+</Info>

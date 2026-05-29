@@ -1,0 +1,172 @@
+---
+title: "JSON Output Schema for CostHQ CLI Commands"
+sidebarTitle: "JSON Output"
+description: "Every cs command supports --json for machine-readable output. All responses include schemaVersion and CostHQVersion fields for forward compatibility."
+---
+
+Every CostHQ command accepts a `--json` flag that produces machine-readable output on stdout. Use this flag in agent workflows, CI pipelines, and any automation that needs to parse command results programmatically rather than scrape human-readable text.
+
+## Schema Versioning
+
+Every `--json` response includes top-level metadata fields regardless of the command:
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  ...
+}
+```
+
+Always check `schemaVersion` before parsing the rest of the object. If the value is higher than your integration expects, emit a warning and degrade gracefully — never silently break.
+
+## `cs start --json`
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "name": "Fix authentication bug",
+  "status": "active",
+  "directory": "/home/user/project",
+  "gitRoot": "/home/user/project",
+  "branch": "main"
+}
+```
+
+Capture `id` immediately — you can pass it to subsequent commands via `-s <id>` to target this session explicitly when running multiple sessions concurrently.
+
+## `cs status --json`
+
+Returns the following shape when a session is active:
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "name": "Fix authentication bug",
+  "status": "active",
+  "gitRoot": "/home/user/project",
+  "aiCost": 1.23,
+  "aiTokens": 45000,
+  "liveDuration": 847,
+  "liveDurationFormatted": "14m"
+}
+```
+
+When no session is active, `cs status --json` exits with code `1` and returns:
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "error": { "code": "no_active_session", "message": "No active session" }
+}
+```
+
+## `cs end --json`
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "name": "Fix authentication bug",
+  "status": "completed",
+  "duration": 847,
+  "durationFormatted": "14m",
+  "filesChanged": 8,
+  "commits": 2,
+  "aiTokens": 31450,
+  "aiCost": 1.43
+}
+```
+
+## `cs show --json`
+
+`cs show --json` returns the full session detail including files, commits, AI usage records, and annotations:
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "name": "Fix payment processing + retry",
+  "status": "completed",
+  "startTime": "2026-02-09T14:30:00.000Z",
+  "endTime": "2026-02-09T14:42:17.000Z",
+  "duration": 737,
+  "durationFormatted": "12m",
+  "workingDirectory": "/home/user/project",
+  "filesChanged": 6,
+  "commits": 2,
+  "aiTokens": 46000,
+  "aiCost": 1.065,
+  "notes": "Fixed payment bug, added exponential backoff retry",
+  "files": [
+    { "id": 1, "sessionId": 42, "filePath": "src/payments.ts", "changeType": "modified", "timestamp": "2026-02-09T14:32:11.000Z" },
+    { "id": 2, "sessionId": 42, "filePath": "src/retry.ts", "changeType": "created", "timestamp": "2026-02-09T14:35:44.000Z" },
+    { "id": 3, "sessionId": 42, "filePath": "tests/payments.test.ts", "changeType": "modified", "timestamp": "2026-02-09T14:38:20.000Z" }
+  ],
+  "commits": [
+    { "id": 1, "sessionId": 42, "hash": "a1b2c3d", "message": "fix: payment processing null check", "timestamp": "2026-02-09T14:36:00.000Z" },
+    { "id": 2, "sessionId": 42, "hash": "e4f5g6h", "message": "feat: add exponential backoff retry", "timestamp": "2026-02-09T14:41:00.000Z" }
+  ],
+  "aiUsage": [
+    { "id": 1, "sessionId": 42, "provider": "anthropic", "model": "claude-opus-4-6", "tokens": 12000, "promptTokens": 8000, "completionTokens": 4000, "cost": 0.42, "timestamp": "2026-02-09T14:31:05.000Z" },
+    { "id": 2, "sessionId": 42, "provider": "anthropic", "model": "claude-opus-4-6", "tokens": 18000, "promptTokens": 12000, "completionTokens": 6000, "cost": 0.63, "timestamp": "2026-02-09T14:34:22.000Z" },
+    { "id": 3, "sessionId": 42, "provider": "anthropic", "model": "claude-sonnet-4", "tokens": 16000, "promptTokens": 14000, "completionTokens": 2000, "cost": 0.072, "timestamp": "2026-02-09T14:39:50.000Z" }
+  ],
+  "annotations": [
+    { "id": 1, "sessionId": 42, "message": "Starting retry logic implementation", "timestamp": "2026-02-09T14:35:00.000Z" },
+    { "id": 2, "sessionId": 42, "message": "Tests passing, cleaning up", "timestamp": "2026-02-09T14:40:30.000Z" }
+  ]
+}
+```
+
+## `cs log-ai --json`
+
+In addition to the logged values, the response includes a `pricing` object so you can verify which pricing source was used:
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "logged": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4",
+    "tokens": 10000,
+    "cost": 0.054
+  },
+  "pricing": {
+    "source": "built-in",
+    "modelKnown": true,
+    "inputPer1M": 3.0,
+    "outputPer1M": 15.0
+  },
+  "session": { "id": 42, "aiCost": 0.054, "aiTokens": 10000 }
+}
+```
+
+`pricing.source` is one of `"built-in"`, `"custom"`, or `"manual"`. If `pricing.modelKnown` is `false`, the model is not in the built-in pricing table and you should provide an explicit cost via `-c`.
+
+## `cs dashboard --json`
+
+Returns the startup metadata for the dashboard process:
+
+```json
+{ "url": "http://127.0.0.1:3737", "port": 3737, "pid": 12345, "host": "127.0.0.1", "apiVersion": 1 }
+```
+
+Use `pid` if you need to manage the dashboard process lifecycle from a parent script.
+
+## Non-Interactive Guarantees
+
+When you pass `--json`, CostHQ makes the following guarantees for safe use in automation:
+
+- All commands are **fully non-interactive** — no prompts, no TTY input required.
+- `cs start --json` calls `process.exit(0)` immediately after printing — safe to call with `execSync`.
+- Use `--close-stale` or `--resume` alongside `cs start --json` to avoid `session_active` errors in unattended scripts.
+- On **Windows**, use `where cs` instead of `which cs` for install detection. All commands work identically on Windows, macOS, and Linux.

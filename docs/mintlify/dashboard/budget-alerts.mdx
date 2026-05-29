@@ -1,0 +1,80 @@
+---
+title: "Configure Budget Alerts and Spend Limits in CostHQ"
+sidebarTitle: "Budget Alerts"
+description: "Set per-session and daily cost limits with cs budget. The Alerts page tracks spend with live progress bars and fires browser notifications on breach."
+---
+
+Budget alerts let you draw a line in the sand before you hand the keys to an agent. Without limits, a misconfigured prompt or an infinite loop can silently rack up API charges — alerts surface the problem while you still have time to act.
+
+## Setting Budget Limits
+
+```bash
+# Alert when daily AI spend exceeds $10
+cs budget --daily 10.00
+
+# Alert when a single session exceeds $2
+cs budget --session 2.00
+```
+
+You can set both limits at the same time by running each command in sequence. Limits are stored locally and persist across restarts.
+
+## What Happens When a Limit Is Reached
+
+CostHQ does **not** terminate your session automatically — you stay in control of when to stop. When spend crosses a threshold, the proxy and `cs run` emit a warning to your terminal so you see it immediately. The dashboard Alerts page also lights up with a triggered-alert badge and rings alarm mode if you have it enabled.
+
+## `cs budget` Options
+
+| Flag | Description |
+| --- | --- |
+| `--daily <amount>` | Alert when daily AI spend exceeds this amount (USD) |
+| `--session <amount>` | Alert when a single session's spend exceeds this amount (USD) |
+
+## Dashboard Alerts Page
+
+Open the Alerts page in the dashboard (`cs dashboard`) for a real-time view of your budget health:
+
+- **Visual progress bars** — watch spend creep toward each limit without switching to the terminal
+- **Status badges** — active rule count, total alarm count, and triggered-alert count displayed at the top of the page
+- **Sessions over limit table** — every session that exceeded its budget, sorted by overage
+- **Alarm mode** — when a budget is exceeded, the browser fires a desktop notification and plays a sound so you notice even if the dashboard tab is in the background
+
+## Best Practices
+
+<Steps>
+  <Step title="Set a per-session limit before experimenting">
+    Before you run an unfamiliar agent, cap what a single session can cost:
+
+    ```bash
+    cs budget --session 5.00
+    ```
+  </Step>
+  <Step title="Add a daily limit as a safety net">
+    A daily limit catches runaway spend even if you forget to set a per-session limit:
+
+    ```bash
+    cs budget --daily 20.00
+    ```
+  </Step>
+  <Step title="Monitor progress in real time">
+    Open the dashboard Alerts page while your agent is running:
+
+    ```bash
+    cs dashboard
+    ```
+
+    The progress bars update live so you can see spend approaching the limit before it trips.
+  </Step>
+  <Step title="Review weekly with cs stats">
+    At the end of each week, run `cs stats` to see total spend, session count, and average cost per session — useful for calibrating your limits over time.
+  </Step>
+</Steps>
+
+<Tip>
+  Run `cs status --json` mid-session to check the current session spend from the terminal without opening the dashboard. The `aiCost` field in the response gives you the live total.
+</Tip>
+
+## Pro: Spend Firewall
+
+<Note>
+  **Pro tier feature.** Standard budget alerts warn you after a limit is crossed. The [Spend Firewall](/configuration/pro-license) goes further: it can **block API calls before they happen**, detect runaway agents automatically, and let you define multi-level budget rules (warn at 80%, hard-stop at 100%). Upgrade to Pro to enable it.
+</Note>

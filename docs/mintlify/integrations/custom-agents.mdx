@@ -1,0 +1,150 @@
+---
+title: "Integrate CostHQ with Any Custom AI Agent Framework"
+sidebarTitle: "Custom Agents"
+description: "Track any Python, Node.js, or shell-based agent with CostHQ using cs run, environment variable proxy configuration, CI/CD hooks, or git post-commit hooks."
+---
+
+Any script that makes AI API calls can be tracked with CostHQ — no SDK changes, no framework lock-in. Pick the integration approach that fits how your agent already runs.
+
+## Four Integration Approaches
+
+<CardGroup cols={2}>
+  <Card title="cs run" icon="play">
+    Zero configuration. Wrap your command and CostHQ handles the full session lifecycle automatically.
+  </Card>
+
+  <Card title="Proxy + env vars" icon="arrow-right-arrow-left">
+    Start the local proxy, set two environment variables, and every AI call your script makes is logged automatically.
+  </Card>
+
+  <Card title="CI/CD pipeline" icon="gear">
+    Add `cs start` and `cs end` to your pipeline steps to track every build and test run.
+  </Card>
+
+  <Card title="Git hooks" icon="code-branch">
+    Use a `post-commit` hook to trigger tracking actions whenever your agent commits code.
+  </Card>
+</CardGroup>
+
+## Approach 1: `cs run`
+
+`cs run` is the zero-configuration option. It starts a session, launches a local proxy pre-configured with the right environment variables, runs your command, and prints a cost summary when it exits — all in one step.
+
+```bash
+cs run python my_agent.py
+cs run node agent.js
+cs run -- npx my-agent --task "fix the bug"
+```
+
+**What happens in sequence:**
+
+1. A new session is created (name defaults to the command string)
+2. A local proxy starts on port 3739
+3. Your command launches with `ANTHROPIC_BASE_URL` and `OPENAI_BASE_URL` already pointing at the proxy
+4. All AI API calls are intercepted and logged to the session
+5. When the command exits, the session ends and a summary is printed
+
+## Approach 2: Proxy \+ Environment Variables
+
+If you need more control over session boundaries, start the proxy manually and set the environment variables yourself before running your agent:
+
+```bash
+cs proxy --session "agent run" &
+export ANTHROPIC_BASE_URL=http://127.0.0.1:3739
+python my_agent.py
+cs end
+```
+
+This works with any tool or script that makes Anthropic or OpenAI API calls — not just scripts wrapped with `cs run`.
+
+## Approach 3: CI/CD Pipeline Tracking
+
+Track every build and test pipeline by wrapping your pipeline steps with `cs start` and `cs end`:
+
+```bash
+cs start "CI Build #${BUILD_NUMBER}"
+npm run build && npm test
+cs end -n "Build result: $?"
+```
+
+The exit code of your build command is captured as a note so you can see pass/fail alongside cost in the dashboard.
+
+## Approach 4: Git Hooks
+
+For agents that commit code, use a `post-commit` hook to run tracking actions after each commit. Add the following to `.git/hooks/post-commit`:
+
+```bash
+#!/bin/sh
+cs status > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+  echo "Commit logged to active session"
+fi
+```
+
+## Concurrency and Multiple Repos
+
+Multiple agents or repos on the same machine can safely run at the same time. CostHQ uses SQLite WAL mode so concurrent writes never block each other.
+
+Use `--close-stale` to avoid conflicts when starting a new session, and use `-s <id>` to target a specific session when logging from a separate process:
+
+```bash
+# Terminal 1 — repo A
+cd ~/project-a && cs start "Fix bug" --close-stale
+cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 5000 --completion-tokens 1000
+
+# Terminal 2 — repo B, target session 42 explicitly
+cd ~/project-b && cs start "Add feature" --close-stale
+cs log-ai -p openai -m gpt-4o -t 8000 -c 0.04 -s 42
+```
+
+## Crash Resilience
+
+If an agent dies mid-session, the next `cs start` won't leave orphaned sessions behind:
+
+```bash
+cs start "Continue work" --resume      # resume the existing session for this directory
+cs start "Fresh start" --close-stale   # auto-close all stale sessions, then start fresh
+cs recover --max-age 12                # bulk-end all sessions older than 12 hours
+```
+
+## Recommended Agent Lifecycle
+
+Build your agent around this five-step sequence to get reliable, machine-readable output at every step:
+
+1. `cs start "task" --close-stale --json` → capture the session ID from the response
+2. `cs note "phase 1: analysis" --json` → add a timestamped annotation
+3. Agent performs its work (files and git commits are tracked automatically)
+4. `cs log-ai -p <provider> -m <model> --prompt-tokens <n> --completion-tokens <n> --json` → log each AI call
+5. `cs end -n "summary" --json` → finalize the session and get the full cost totals
+
+```bash
+# Step 1 — start and capture session ID
+SESSION=$(cs start "Refactor auth module" --close-stale --json | jq -r '.id')
+
+# Step 2 — annotate phases
+cs note "phase 1: analysis" --json
+
+# Step 4 — log each AI call after it completes
+cs log-ai -p anthropic -m claude-sonnet-4 \
+  --prompt-tokens 8000 --completion-tokens 2000 --json
+
+# Step 5 — end and print totals
+cs end -n "Refactored auth, 4 tests added" --json
+```
+
+## Failsafe: When `cs` Is Not Installed
+
+Always check whether `cs` is available before trying to track. If CostHQ isn't installed, skip tracking and let the agent continue its primary task:
+
+```bash
+which cs >/dev/null 2>&1 || { echo "costhq not installed, skipping"; }
+```
+
+<Note>
+  On Windows, use `where cs` instead of `which cs`. All `cs` commands work identically on Windows, macOS, and Linux.
+</Note>
+
+## Further Reading
+
+- [JSON Output Reference](/reference/json-output) — full schema for every `--json` response, including `schemaVersion`, error shapes, and exit codes
+- [Node.js Programmatic API](/reference/agent-session) — the `AgentSession` class and `runAgentSession` helper for embedding CostHQ directly in your Node.js agent code

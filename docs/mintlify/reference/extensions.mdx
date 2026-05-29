@@ -1,0 +1,117 @@
+---
+title: "Drop-In SDK Extensions: TrackedOpenAI and TrackedAnthropic"
+sidebarTitle: "Extensions"
+description: "Replace new OpenAI() with new TrackedOpenAI() for automatic token and cost logging. TrackedAnthropic and TrackedGoogleAI work identically."
+---
+
+The `costhq/extensions` module provides drop-in replacements for the official OpenAI, Anthropic, and Google AI SDKs. You swap the constructor, keep every existing call site untouched, and CostHQ automatically logs token counts and costs to your active session — or creates a background session in the dashboard if none is running.
+
+## Import
+
+```typescript
+import { TrackedOpenAI, TrackedAnthropic, TrackedGoogleAI } from 'costhq/extensions';
+```
+
+## TrackedOpenAI
+
+Replace `new OpenAI(options)` with `new TrackedOpenAI(options)`. The resulting object exposes the same `chat.completions.create` interface as the official `openai` package.
+
+```typescript
+const openai = new TrackedOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+// Works exactly like the official OpenAI SDK
+const response = await openai.chat.completions.create({
+  model: 'gpt-4o',
+  messages: [{ role: 'user', content: 'Hello!' }]
+});
+// Token counts and cost are automatically logged to the active session
+```
+
+**Peer dependency:** `openai` must be installed in your project.
+
+## TrackedAnthropic
+
+Replace `new Anthropic(options)` with `new TrackedAnthropic(options)`. The resulting object exposes the same `messages.create` interface as `@anthropic-ai/sdk`.
+
+```typescript
+const anthropic = new TrackedAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const response = await anthropic.messages.create({
+  model: 'claude-sonnet-4',
+  max_tokens: 1024,
+  messages: [{ role: 'user', content: 'Explain recursion' }]
+});
+// input_tokens and output_tokens are read from response.usage automatically
+```
+
+**Peer dependency:** `@anthropic-ai/sdk` must be installed in your project.
+
+## TrackedGoogleAI
+
+Pass your API key directly to `new TrackedGoogleAI(apiKey)`. Call `getGenerativeModel` exactly as you would with the official `GoogleGenerativeAI` class.
+
+```typescript
+const googleAI = new TrackedGoogleAI(process.env.GOOGLE_API_KEY);
+const model = googleAI.getGenerativeModel({ model: 'gemini-pro' });
+const result = await model.generateContent('Tell me a joke');
+// promptTokenCount and candidatesTokenCount are read from usageMetadata automatically
+```
+
+**Peer dependency:** `@google/generative-ai` must be installed in your project.
+
+## Functional Wrappers
+
+If you already have a configured client instance, the `costhq/wrappers` module provides lightweight functional alternatives instead of replacing the constructor:
+
+```typescript
+import { trackedGPT, trackedClaude, trackedGemini } from 'costhq/wrappers';
+
+// Wrap an existing OpenAI client
+const response = await trackedGPT(openaiClient, {
+  model: 'gpt-4o',
+  messages
+});
+
+// Wrap an existing Anthropic client
+const result = await trackedClaude(anthropicClient, {
+  model: 'claude-sonnet-4',
+  messages
+});
+
+// Wrap an existing Google AI client
+const geminiResult = await trackedGemini(googleClient, {
+  model: 'gemini-pro',
+  contents: 'Tell me a joke'
+});
+```
+
+<Tip>
+  Use `TrackedOpenAI` / `TrackedAnthropic` / `TrackedGoogleAI` when setting up a new client. Use the `trackedGPT` / `trackedClaude` / `trackedGemini` wrappers when you already have an existing client you cannot replace.
+</Tip>
+
+## Background Sessions
+
+If no CostHQ session is currently active when you make an API call through a tracked extension, CostHQ automatically creates a **Background API Session** in your dashboard. You can view background sessions alongside your CLI-started sessions in the Sessions page.
+
+This means you can drop the extensions into any existing Node.js application — a web server, a cron job, a script — and costs appear in your dashboard with zero manual session management.
+
+## Peer Dependency Requirements
+
+Install whichever SDKs correspond to the extensions you use:
+
+```bash
+# For TrackedOpenAI
+npm install openai
+
+# For TrackedAnthropic
+npm install @anthropic-ai/sdk
+
+# For TrackedGoogleAI
+npm install @google/generative-ai
+```
+
+CostHQ does not bundle these SDKs. If the required peer is missing, the constructor throws an informative error at instantiation time.
+
+<Note>
+  These extensions use the same pricing lookup as `cs log-ai`. Cost is auto-calculated for all known models. For custom or fine-tuned models not in the built-in pricing table, use the [`AgentSession`](/reference/agent-session) API and pass explicit costs via `session.logAI()`, or register custom pricing with `cs pricing set`.
+</Note>

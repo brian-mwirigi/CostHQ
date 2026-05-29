@@ -1,0 +1,116 @@
+---
+title: "Track OpenClaw Agent Runs Automatically with CostHQ"
+sidebarTitle: "OpenClaw"
+description: "Install the CostHQ skill to auto-track every OpenClaw run — session start, AI calls, cost logging, and session end without any manual steps."
+---
+
+CostHQ ships as an OpenClaw skill, so the agent tracks itself — every task gets a session, every AI call gets logged, and every cost gets recorded without a single manual command.
+
+## Quick Install
+
+<Steps>
+  <Step title="Install the CostHQ CLI">
+    ```bash
+    npm install -g costhq
+    ```
+  </Step>
+  <Step title="Install the skill via ClawHub">
+    ```bash
+    clawhub install CostHQ
+    ```
+  </Step>
+  <Step title="Start a new OpenClaw session">
+    That's it. Start a new OpenClaw session and tracking begins automatically.
+  </Step>
+</Steps>
+
+<Accordion title="Manual install (without ClawHub)">
+  If you don't have ClawHub, copy the skill directly from the global npm package:
+
+  ```bash
+  cp -r $(npm root -g)/costhq/skills/CostHQ ~/.openclaw/skills/
+  ```
+</Accordion>
+
+## What the Skill Does Automatically
+
+Once installed, the OpenClaw agent runs these steps on your behalf — no configuration needed:
+
+1. Runs `cs start "task name"` at the beginning of each task
+2. Logs API usage with `cs log-ai` after each AI call
+3. Checks costs with `cs status --json` during long tasks
+4. Runs `cs end` when the task completes
+
+## Example Agent Transcript
+
+Here's what a tracked OpenClaw session looks like in practice, using a real payment-bug fix as an example:
+
+```text
+You: Fix the payment processing bug and add retry logic
+
+Agent: Starting session tracking...
+  $ cs start "Fix payment processing + retry" --close-stale --json
+  {"schemaVersion":1,"id":12,"name":"Fix payment processing + retry","status":"active",...}
+
+  $ cs note "analyzing existing retry implementation" --json
+  {"id":1,"sessionId":12,"message":"analyzing existing retry implementation",...}
+
+  [reads src/payments.ts, src/retry.ts, identifies the bug]
+
+  $ cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 8000 --completion-tokens 2000 --json
+  {"logged":{"provider":"anthropic","model":"claude-sonnet-4","tokens":10000,"cost":0.054},"session":{"id":12,"aiCost":0.054,"aiTokens":10000}}
+
+  [edits src/payments.ts — fixes null check]
+
+  $ cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 12000 --completion-tokens 4000 --json
+  {"logged":{"provider":"anthropic","model":"claude-sonnet-4","tokens":16000,"cost":0.096},"session":{"id":12,"aiCost":0.15,"aiTokens":26000}}
+
+  [writes retry logic with exponential backoff, runs tests]
+
+  $ cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 5000 --completion-tokens 2000 --json
+  {"logged":{"provider":"anthropic","model":"claude-sonnet-4","tokens":7000,"cost":0.045},"session":{"id":12,"aiCost":0.195,"aiTokens":33000}}
+
+  $ cs note "tests passing, committing" --json
+
+  $ cs end -n "Fixed payment bug, added exponential backoff retry" --json
+  {"id":12,"status":"completed","durationFormatted":"9m","filesChanged":3,"commits":1,"aiCost":0.195}
+
+  Done — 9 minutes, 3 files, 1 commit, $0.20 total.
+```
+
+## After 50 Agent Runs
+
+Run `cs stats` at any time to see aggregated totals across all sessions:
+
+```bash
+$ cs stats
+
+┌───────────────────┬────────────────┐
+│ Total Sessions    │ 50             │
+│ Total Time        │ 8h 34m         │
+│ Files Changed     │ 312            │
+│ Commits           │ 87             │
+│ Total AI Cost     │ $47.23         │
+└───────────────────┴────────────────┘
+```
+
+## Key Flags for Agents
+
+| Flag | Why |
+| --- | --- |
+| `--json` | Machine-readable output on every command |
+| `--close-stale` | Prevents `session_active` errors from prior crashes |
+| `--prompt-tokens` / `--completion-tokens` | Auto-calculates cost from the built-in pricing table |
+| `-s <id>` | Targets a specific session for multi-repo safety |
+
+## Failsafe: When `cs` Is Not Installed
+
+The skill checks whether `cs` is available before attempting to track. If CostHQ isn't installed, the agent skips tracking and continues with its primary task — your work is never blocked:
+
+```bash
+which cs >/dev/null 2>&1 || { echo "costhq not installed, skipping tracking"; }
+```
+
+<Note>
+  On Windows, use `where cs` instead of `which cs`. All `cs` commands work identically on Windows, macOS, and Linux.
+</Note>

@@ -1,0 +1,67 @@
+---
+title: "introduction"
+---
+
+AI agents are powerful — but they burn tokens fast, and most developers have no idea what a single coding session actually costs until the invoice arrives. CostHQ solves that by giving you a lightweight CLI and Node.js SDK that wraps your existing workflow, captures every meaningful signal (time, files, commits, and AI spend), and stores everything locally in a SQLite database. You get a full picture of each session without changing how you work or sending any data off your machine.
+
+## Four things CostHQ tracks
+
+Every session CostHQ records covers four dimensions of cost and activity:
+
+- **Time** — Wall-clock duration from session start to end, measured to the second and displayed in a human-readable format (e.g. `14m`).
+- **Files** — The number of files modified during the session, detected automatically from your working directory.
+- **Commits** — Git commits made while the session is active, so you can correlate code output with AI spend.
+- **AI Cost** — Token usage logged against 42\+ built-in model prices from Anthropic, OpenAI, Codex, DeepSeek, Azure, Cohere, Google, and more.
+
+## How it works
+
+CostHQ gives you four ways to track a session, so you can pick the method that fits your workflow without any forced migration.
+
+<CardGroup cols={2}>
+  <Card title="Zero-config wrap" icon="play" href="/tracking/cs-run">
+    Use `cs run <command>` to start a session, launch a proxy, run your command, and print a cost summary — all in one step.
+  </Card>
+
+  <Card title="Local proxy" icon="network-wired" href="/tracking/proxy">
+    Run `cs proxy start` to spin up a local HTTP proxy on port 3739 that transparently intercepts Anthropic and OpenAI API calls and logs token usage automatically.
+  </Card>
+
+  <Card title="Manual lifecycle" icon="toggle-on" href="/tracking/manual">
+    Use `cs start` to open a session and `cs end` to close it, with full control over naming and notes. Ideal for scripting or multi-step workflows.
+  </Card>
+
+  <Card title="OpenClaw / Claude Code" icon="robot" href="/tracking/openclaw-skill">
+    Install the CostHQ skill via `clawhub install costhq` to add native session tracking inside Claude Code and other OpenClaw-compatible agents.
+  </Card>
+</CardGroup>
+
+## Who it's for
+
+CostHQ is designed for three groups of people who all feel the same pain — invisible AI spend.
+
+**Individual developers** running Claude Code, Copilot, or custom agents who want a simple answer to "how much did that task cost me today?"
+
+**Teams** that need shared visibility into AI spend across members, with budget alerts and a centralized dashboard to prevent runaway costs on long-running agent jobs.
+
+**Agent framework authors** who want to instrument their SDKs and give end users first-class cost reporting without building infrastructure from scratch.
+
+## Privacy & data
+
+CostHQ is built on a local-first philosophy. Your session data never leaves your machine unless you explicitly opt in to a paid plan with cloud sync.
+
+<Note>
+  All session data is stored in a local SQLite database at `~/.costhq/sessions.db`. CostHQ collects no telemetry and makes no outbound network requests on the free tier.
+</Note>
+
+The database runs in WAL mode for safe concurrent access and stays out of your project directories entirely — nothing is written to your repo or `.gitignore`.
+
+## Pricing overview
+
+CostHQ's core CLI is free forever. Paid tiers add collaboration and cloud features for teams that need them.
+
+| Tier | Price | Highlights |
+| --- | --- | --- |
+| **Free** | \$0 | Local CLI, SQLite storage, basic dashboard |
+| **Pro** | \$12/mo | Cloud sync, semantic caching proxy, shareable stats card |
+| **Team** | \$25/seat/mo | Shared budget wallets, centralized dashboard, Slack/Teams alerts, GitHub Actions CI/CD breaker |
+| **Enterprise** | Custom | SAML SSO, SOC2 compliance, on-premise proxy |

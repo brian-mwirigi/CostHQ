@@ -1,0 +1,77 @@
+---
+title: "CostHQ Web Dashboard: Sessions, Costs, and Analytics"
+sidebarTitle: "Overview"
+description: "The CostHQ dashboard runs at localhost:3737. View session history, AI cost trends, model breakdowns, file hotspots, activity heatmaps, and pricing tables."
+---
+
+The CostHQ web dashboard is a local web application that gives you a visual window into every session, model, and dollar your AI agents have consumed. Run `cs dashboard` to start it — it never opens an external connection and keeps all your data on your machine.
+
+## Start the Dashboard
+
+```bash
+cs dashboard
+# Opens http://localhost:3737
+
+cs dashboard --port 4000       # custom port
+cs dashboard --no-open         # don't auto-open browser
+cs dashboard --json            # machine-readable startup output
+```
+
+## Dashboard Pages
+
+<CardGroup cols={2}>
+  <Card title="Overview" icon="chart-line">
+    KPI cards showing total sessions, cost, time, and average duration. Includes a 30-day daily cost area chart, daily token usage bar chart (prompt vs. completion), a sessions-per-day chart, a most-expensive-sessions table, and a cost velocity chart (\$/hr per session).
+  </Card>
+
+  <Card title="Sessions" icon="table-list">
+    A searchable, sortable session table with status badges and a cost/hr column. Export your data with the JSON or CSV buttons. Click any row to open the full session detail view.
+  </Card>
+
+  <Card title="Models & Providers" icon="microchip-ai">
+    Per-model and per-provider cost, token, and call breakdown. Includes a cost-by-model pie chart, a top-10 token usage stacked bar chart, and prompt-to-completion ratio analysis with inline distribution bars.
+  </Card>
+
+  <Card title="Insights" icon="lightbulb">
+    File hotspots showing the most frequently changed files with churn bars, a 7×24 activity heatmap, a per-project cost and session breakdown, and a full model pricing reference table.
+  </Card>
+
+  <Card title="Alerts" icon="bell">
+    Configure per-session and daily budget thresholds with visual progress bars. Alarm mode fires browser notifications and sound when a limit is exceeded. Status badges surface active rules, alarm count, and triggered alerts at a glance.
+  </Card>
+</CardGroup>
+
+## Session Detail View
+
+Click any session in the Sessions page to open its detail view. The detail view surfaces everything CostHQ knows about that session in one place.
+
+**Unified timeline** — files changed, commits, AI calls, and notes appear in a single chronological feed so you can replay exactly how the session unfolded.
+
+**Tabs** — switch between Timeline, Files, Commits, AI Calls, and Notes to focus on a specific dimension of the session.
+
+**Stat row** — duration, total cost, cost/hr, tokens, prompt-to-completion ratio, files changed, and commits give you an at-a-glance summary at the top of every detail view.
+
+## Dashboard Options
+
+| Option | Default | Description |
+| --- | --- | --- |
+| `--port <port>` | `3737` | Port to serve the dashboard on |
+| `--host <host>` | `127.0.0.1` | Bind address |
+| `--no-open` | `false` | Don't auto-open the browser after startup |
+| `--json` | `false` | Print machine-readable startup output: `{ url, port, pid, host, apiVersion, token? }` |
+
+## Security
+
+The dashboard binds to `127.0.0.1` by default so only processes on your own machine can reach it. When you bind to a non-localhost address with `--host 0.0.0.0`, CostHQ automatically generates a random session token and requires it for every API request. The dashboard never sends telemetry or opens any external connections — your session data stays local.
+
+<Warning>
+  Using `--host 0.0.0.0` exposes the dashboard on your network. CostHQ prints a loud warning when you do this and requires a session token on all API requests. Only use it when you have network-level controls in place.
+</Warning>
+
+## API Versioning
+
+All dashboard API endpoints are available at `/api/v1/*` (canonical) and `/api/*` (backward-compatible alias). Every response includes an `X-Codesession-Api-Version: 1` header so your tooling can detect the version programmatically.
+
+## Start Fresh
+
+The **Start Fresh** button in the sidebar resets all session data. Before anything is deleted, a confirmation modal lists exactly what will be removed — sessions, AI usage entries, file changes, commits, and alert thresholds. Use this when you want a clean slate without touching your CostHQ installation.

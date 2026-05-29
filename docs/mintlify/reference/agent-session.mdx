@@ -1,0 +1,160 @@
+---
+title: "AgentSession: Programmatic Session API for Node.js"
+sidebarTitle: "AgentSession"
+description: "The AgentSession class from costhq/agents provides budget enforcement, file watching, git tracking, and callback hooks for Node.js agent frameworks."
+---
+
+For custom agent frameworks built in Node.js, `AgentSession` gives you the full CostHQ tracking API programmatically — no CLI required. You control when sessions start and end, log AI calls with granular token counts, enforce hard budget caps, and receive callback notifications on every significant event.
+
+## Import
+
+```typescript
+import { AgentSession, BudgetExceededError, runAgentSession } from 'costhq/agents';
+```
+
+## Constructor
+
+```typescript
+const session = new AgentSession('Refactor auth module', {
+  budget: 5.00,        // Hard cap in USD
+  directory: './src',  // Watch this directory
+  git: true,           // Track commits
+});
+```
+
+Pass a human-readable session name as the first argument, then an optional config object:
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `budget` | `number` | Hard budget cap in USD. Throws `BudgetExceededError` when exceeded. |
+| `directory` | `string` | Directory to watch for file changes. Defaults to `process.cwd()`. |
+| `git` | `boolean` | Enable git commit tracking. Defaults to `true`. |
+| `gitPollInterval` | `number` | Interval (ms) to check for new commits. Defaults to `5000`. |
+| `onBudgetExceeded` | `function` | Callback called before `BudgetExceededError` is thrown. Receives `(spent, budget)`. |
+| `onAIUsage` | `function` | Callback when AI usage is logged. Receives `(cost, totalCost, model)`. |
+| `onFileChange` | `function` | Callback on each file change. Receives `(filePath, changeType)`. |
+| `metadata` | `object` | Optional key-value metadata to attach to the session. |
+
+## Key Methods
+
+### `session.start()`
+
+Starts the session and begins the file watcher and git commit poller. Call this before any `logAI` or `canAfford` calls. Returns the numeric session ID.
+
+```typescript
+const sessionId = session.start();
+```
+
+### `session.logAI(provider, model, tokens, cost, options?)`
+
+Logs a single AI call against this session. CostHQ records the tokens, cost, and timestamp, then checks the running total against your budget.
+
+```typescript
+session.logAI('anthropic', 'claude-opus-4-6', 15000, 0.30, {
+  promptTokens: 10000,
+  completionTokens: 5000,
+});
+```
+
+| Parameter | Type | Description |
+| --- | --- | --- |
+| `provider` | `string` | Provider name, e.g. `'openai'`, `'anthropic'`, `'google'`. |
+| `model` | `string` | Model name, e.g. `'gpt-4o'`, `'claude-opus-4-6'`. |
+| `tokens` | `number` | Total token count. |
+| `cost` | `number` | Cost in USD. |
+| `options.promptTokens` | `number` | Input/prompt token count (optional but recommended). |
+| `options.completionTokens` | `number` | Output/completion token count (optional but recommended). |
+| `options.agentName` | `string` | Label this call with a named sub-agent (optional). |
+
+Returns the remaining budget in USD, or `null` if no budget is set. Throws `BudgetExceededError` if the new total meets or exceeds the budget.
+
+### `session.canAfford(amount)`
+
+Performs a pre-flight budget check before committing to an expensive API call. Returns `true` if the estimated cost fits within the remaining budget, or `true` unconditionally when no budget is set.
+
+```typescript
+if (!session.canAfford(2.00)) {
+  console.log('Switching to cheaper model...');
+}
+```
+
+### `session.end(notes?)`
+
+Stops the file watcher and git poller, finalises the session, and returns an `AgentSessionSummary`. Pass an optional notes string to annotate the session.
+
+```typescript
+const summary = session.end('All linting errors resolved');
+```
+
+## Budget Enforcement Example
+
+```typescript
+session.start();
+
+// After each AI call
+session.logAI('anthropic', 'claude-opus-4-6', 15000, 0.30, {
+  promptTokens: 10000,
+  completionTokens: 5000,
+});
+
+// Pre-flight check
+if (!session.canAfford(2.00)) {
+  console.log('Switching to cheaper model...');
+}
+
+// BudgetExceededError is thrown automatically
+try {
+  session.logAI('openai', 'gpt-4o', 50000, 4.80);
+} catch (e) {
+  if (e instanceof BudgetExceededError) {
+    console.log(`Stopped at $${e.spent} (limit: $${e.budget})`);
+  }
+}
+
+const summary = session.end();
+// { duration, filesChanged, commits, aiCost, aiTokens, budgetRemaining, ... }
+```
+
+<Note>
+  When `BudgetExceededError` is thrown, the session is automatically ended before the error propagates. You do **not** need to call `session.end()` in your catch block.
+</Note>
+
+## AgentSessionSummary Fields
+
+`session.end()` returns an `AgentSessionSummary` object with the following fields:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `sessionId` | `number` | The numeric ID of the session. |
+| `name` | `string` | The name you passed to the constructor. |
+| `duration` | `number` | Wall-clock duration in seconds. |
+| `filesChanged` | `number` | Total number of file change events recorded. |
+| `commits` | `number` | Number of git commits detected during the session. |
+| `aiCost` | `number` | Total AI spend in USD. |
+| `aiTokens` | `number` | Total token count across all `logAI` calls. |
+| `budgetRemaining` | `number | null` | Remaining budget in USD, or `null` if no budget was set. |
+| `files` | `array` | File change records: `{ path, type, timestamp }[]`. |
+| `commitList` | `array` | Commit records: `{ hash, message, timestamp }[]`. |
+| `aiUsageBreakdown` | `array` | Per-call AI usage: `{ provider, model, tokens, cost, timestamp }[]`. |
+| `metadata` | `object | undefined` | The metadata object passed in config, if any. |
+
+## `runAgentSession` Helper
+
+`runAgentSession` wraps the full start / run / end lifecycle for you. It handles `BudgetExceededError` gracefully and calls `session.end()` automatically, even if your agent function throws.
+
+```typescript
+import { runAgentSession } from 'costhq/agents';
+
+const summary = await runAgentSession(
+  'Fix all linting errors',
+  { budget: 3.00, directory: './src' },
+  async (session) => {
+    const response = await anthropic.messages.create({ ... });
+    session.logAI('anthropic', 'claude-sonnet-4-5', tokens, cost);
+  }
+);
+
+console.log(`Done: ${summary.filesChanged} files, $${summary.aiCost}`);
+```
+
+Use `runAgentSession` for straightforward one-shot tasks. Use `new AgentSession()` directly when you need finer control — for example, to inspect `summary` at intermediate checkpoints or to conditionally resume a session.

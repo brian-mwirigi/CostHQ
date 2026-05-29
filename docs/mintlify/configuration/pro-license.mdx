@@ -1,0 +1,69 @@
+---
+title: "CostHQ Pro: Spend Firewall, Alerts & Advanced Analytics"
+sidebarTitle: "Pro License"
+description: "CostHQ Pro adds the Spend Firewall, runaway agent alerts, shareable stats cards, CSV export, activity heatmaps, and advanced cost analytics for $12/month."
+---
+
+CostHQ Pro unlocks advanced cost governance features on top of the free CLI. Everything in the free tier stays free — Pro adds the tools you need to stop runaway agents before they burn your budget and to share your productivity stats with your team.
+
+## Free vs Pro
+
+| Feature | Free | Pro |
+| --- | --- | --- |
+| Full CLI access | ✓ | ✓ |
+| Built-in AI pricing (42\+ models) | ✓ | ✓ |
+| Local SQLite database | ✓ | ✓ |
+| Git & file change tracking | ✓ | ✓ |
+| Basic dashboard | ✓ | ✓ |
+| Budget alerts (CLI) | ✓ | ✓ |
+| Spend Firewall | — | ✓ |
+| Runaway Agent Alerts | — | ✓ |
+| Shareable Stats Card | — | ✓ |
+| CSV Export | — | ✓ |
+| Activity Heatmaps & Hotspots | — | ✓ |
+| Command Center Console | — | ✓ |
+| Advanced Insights | — | ✓ |
+
+## Pricing
+
+| Plan | Price | Details |
+| --- | --- | --- |
+| **Pro** | \$12 / month | Billed monthly, cancel anytime |
+| **Pro Lifetime** | \$249 once | All Pro features forever, lifetime updates |
+
+## Activating your license
+
+1. Purchase a plan at [brianmunene.me/#pricing](https://www.brianmunene.me/#pricing).
+2. After purchase you receive a license key by email.
+3. Activate it in the dashboard **Settings** page, or via the CLI if prompted.
+4. CostHQ validates your license online once and then caches the result locally. Re-validation happens every **14 days** — your Pro features work offline between validations.
+
+<Note>
+  Pro features require a valid license key. When you first install CostHQ you get a **14-day free trial** that enables all Pro features with no key required. After the trial period, activate a license to keep Pro access.
+</Note>
+
+## Pro features explained
+
+### Spend Firewall
+
+The Spend Firewall intercepts API calls _before_ they leave your machine and blocks them when a configurable policy rule is triggered. You define rules such as a daily spend cap, a per-session limit, a per-project ceiling, or a list of models that are never allowed. Agents that would blow past your budget are stopped at the gate instead of after the fact.
+
+### Runaway Agent Alerts
+
+CostHQ monitors your active sessions for unusual patterns: cost-per-minute spikes that exceed a threshold, the same model being called in rapid succession, or an abnormally high number of file touches in a short window. When a pattern matches, CostHQ raises an alert in the dashboard and (optionally) triggers a browser notification so you can intervene before the session drains your budget.
+
+### Command Center Console
+
+The Command Center is a live control panel inside the dashboard. You can start a new session, inject token records, or terminate a running session entirely — all from the browser UI without touching the CLI. Background watchers for file changes and git commits start automatically when you launch a session from the console.
+
+### Shareable Stats Card
+
+The Stats Card exports a PNG image summarising your coding and AI usage — total sessions, total time, total spend, top models, most active days — styled like a Spotify Wrapped card. Share it in your team Slack, your portfolio, or your README.
+
+### Activity Heatmaps & File Hotspots
+
+The **Activity Heatmap** shows a 7 × 24 grid of your sessions broken down by day of week and hour of day, making it easy to spot when you and your agents are most productive (and most expensive). **File Hotspots** lists the files changed most frequently across all sessions with churn bars, so you can see which parts of your codebase attract the most AI-assisted iteration.
+
+### Advanced Insights
+
+The Insights page combines file hotspots, the activity heatmap, per-project breakdowns (cost, sessions, duration, tokens), and the full model pricing reference in one place. Use it to audit where your AI budget is actually going at a task and project level.

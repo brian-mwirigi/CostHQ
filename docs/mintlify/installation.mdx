@@ -1,0 +1,81 @@
+---
+title: "Install CostHQ CLI and Node.js Package"
+sidebarTitle: "Installation"
+description: "Install CostHQ globally with npm. Includes build tool requirements for SQLite, binary list, and platform-specific setup for macOS, Linux, and Windows."
+---
+
+CostHQ requires **Node.js 16 or later** and installs as a global npm package. The embedded SQLite driver ([better-sqlite3](https://github.com/WiseLibs/better-sqlite3)) uses native code, so your system needs C/C\+\+ build tools available during installation. On most platforms, prebuilt binaries are provided and compilation is skipped automatically.
+
+<Warning>
+  If `npm install -g costhq` fails with a native compilation error, install the build tools for your platform (see the Prerequisites table below) and then re-run the install command. Skipping this step is the most common cause of installation failures.
+</Warning>
+
+<Steps>
+  <Step title="Install build tools for your platform">
+    CostHQ's SQLite driver compiles a small native module during installation. Install the correct build tools for your operating system before proceeding.
+
+    | Platform | Command |
+    | --- | --- |
+    | **Ubuntu / Debian** | `sudo apt-get install -y build-essential python3` |
+    | **macOS** | `xcode-select --install` |
+    | **Windows** | `npm install -g windows-build-tools` |
+    | **Alpine** | `apk add build-base python3` |
+
+    If prebuilt binaries are available for your platform and Node.js version, npm downloads them directly and skips compilation entirely.
+  </Step>
+  <Step title="Install CostHQ globally">
+    Run the global install command. This installs the `cs`, `codesession`, and `codesession-mcp` binaries on your PATH.
+
+    <CodeGroup>
+
+    ```bash npm
+    npm install -g costhq
+    ```
+
+    </CodeGroup>
+  </Step>
+  <Step title="Verify the installation">
+    Confirm that the `cs` binary is available and shows the expected version.
+
+    ```bash
+    cs --version
+    ```
+
+    You should see output like `3.1.1`. If the command is not found, ensure your global npm bin directory is on your `PATH`.
+  </Step>
+</Steps>
+
+## Binaries Installed
+
+Installing `costhq` places three binaries on your system:
+
+| Binary | Purpose |
+| --- | --- |
+| `cs` | Main CLI — all session and tracking commands |
+| `codesession` | Alias for `cs` |
+| `codesession-mcp` | MCP server for Claude Code integration |
+
+Use `cs` for day-to-day work. Use `codesession-mcp` when [configuring Claude Code's MCP settings](/integrations/claude-code).
+
+## Custom Database Path
+
+By default, CostHQ stores all session data in `~/.CostHQ/sessions.db`. Set the `CODESESSION_DB_PATH` environment variable to use a different location — useful for test isolation or keeping separate databases per project.
+
+```bash
+# macOS / Linux
+export CODESESSION_DB_PATH=~/projects/client-a/.codesession.db
+
+# Windows PowerShell
+$env:CODESESSION_DB_PATH = "C:\projects\client-a\.codesession.db"
+```
+
+The database file and its parent directory are created automatically on first use.
+
+## Data Location Reference
+
+| Platform | Default path |
+| --- | --- |
+| macOS / Linux | `~/.CostHQ/sessions.db` |
+| Windows | `C:\Users\<username>\.CostHQ\sessions.db` |
+
+You're all set. Continue to [Quick Start](/quickstart) to track your first session.

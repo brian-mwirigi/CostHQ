@@ -1,0 +1,285 @@
+---
+title: "Session Commands: start, end, status, show, list, stats"
+sidebarTitle: "Session Commands"
+description: "Reference for cs start, cs end, cs status, cs show, cs list, cs stats, cs note, and cs recover — the core session lifecycle commands in CostHQ."
+---
+
+These commands manage the full lifecycle of a CostHQ tracking session — from opening a session and annotating work in progress, to ending it and reviewing the resulting metrics. Use them together to capture time, file changes, git commits, and AI spend for any task.
+
+## cs start
+
+```text
+cs start <description> [options]
+```
+
+Start a new tracking session. Only one session can be active at a time. The `<description>` you provide appears in `cs list` output and the dashboard, so specific descriptions make your history far more useful.
+
+| Flag | Description |
+| --- | --- |
+| `--resume` | Resume the existing session for the current git root instead of creating a new one |
+| `--close-stale` | Auto-close any orphaned sessions before starting a fresh one |
+| `--json` | Machine-readable output |
+
+```bash
+cs start "Feature: Add user search"
+cs start "Bug: Fix null pointer in payment flow" --close-stale
+cs start "Continue work" --resume --json
+```
+
+**JSON output shape**
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "name": "Feature: Add user search",
+  "status": "active",
+  "directory": "/home/user/project",
+  "gitRoot": "/home/user/project",
+  "branch": "feature/user-search"
+}
+```
+
+---
+
+## cs end
+
+```text
+cs end [options]
+```
+
+End the active session and print a summary of time spent, files changed, commits made, and AI cost incurred.
+
+| Flag | Description |
+| --- | --- |
+| `-n, --notes <text>` | Add a note to the session before ending |
+| `-s, --session <id>` | Target a specific session by ID instead of the active one |
+| `--json` | Machine-readable output |
+
+```bash
+cs end
+cs end -n "Completed login flow, needs QA review"
+cs end -n "Branch: $(git branch --show-current)" --json
+```
+
+**JSON output shape**
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "duration": 847,
+  "durationFormatted": "14m",
+  "filesChanged": 8,
+  "commits": 2,
+  "aiCost": 1.43,
+  "aiTokens": 31450
+}
+```
+
+---
+
+## cs status
+
+```text
+cs status [options]
+```
+
+Show whether a session is currently active, and if so, its live duration and running AI spend. Use this mid-task to check costs without ending the session.
+
+| Flag | Description |
+| --- | --- |
+| `-s, --session <id>` | Show status for a specific session by ID |
+| `--json` | Machine-readable output |
+
+**JSON output contract (active session)**
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 42,
+  "name": "Feature: Add user search",
+  "status": "active",
+  "gitRoot": "/home/user/project",
+  "aiCost": 1.23,
+  "aiTokens": 45000,
+  "liveDuration": 847,
+  "liveDurationFormatted": "14m"
+}
+```
+
+When no session is active, `cs status --json` exits with code `1` and returns a structured error:
+
+```json
+{
+  "schemaVersion": 1,
+  "error": {
+    "code": "no_active_session",
+    "message": "No active session"
+  }
+}
+```
+
+Always parse `error.code` — never string-compare `error.message`, which may change between versions.
+
+---
+
+## cs show
+
+```text
+cs show [id] [options]
+```
+
+Show detailed metrics for a session. Defaults to the most recent session when you omit `[id]`.
+
+| Flag | Description |
+| --- | --- |
+| `--files` | List every file that changed during the session |
+| `--commits` | List every git commit made during the session |
+| `--json` | Machine-readable output (includes `files`, `commits`, `aiUsage`, and `annotations` arrays) |
+
+```bash
+cs show
+cs show 12
+cs show 12 --files --commits
+```
+
+**Example table output**
+
+```text
+$ cs show
+
+Session: Fix authentication bug
+
+┌─────────────────┬────────────────────────────────────┐
+│ Status          │ Completed                          │
+│ Started         │ Mar 02, 2026 14:30                 │
+│ Ended           │ Mar 02, 2026 14:44                 │
+│ Duration        │ 14m                                │
+│ Files Changed   │ 8                                  │
+│ Commits         │ 2                                  │
+│ AI Tokens       │ 31,450                             │
+│ AI Cost         │ $1.43                              │
+│ Top Model       │ claude-3-5-sonnet-20241022         │
+│ Notes           │ Resolved null pointer in JWT check │
+└─────────────────┴────────────────────────────────────┘
+```
+
+---
+
+## cs list
+
+```text
+cs list [options]
+```
+
+List recent sessions in a compact summary table, sorted from most recent to oldest.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `-l, --limit <n>` | `10` | Number of sessions to return |
+| `--json` | — | Machine-readable output |
+
+```bash
+cs list
+cs list -l 50
+```
+
+**Example table output**
+
+```text
+$ cs list
+
+Recent Sessions:
+
+┌────┬─────────────────────────────────┬──────────┬───────┬─────────┐
+│ ID │ Description                     │ Duration │ Files │ Cost    │
+├────┼─────────────────────────────────┼──────────┼───────┼─────────┤
+│ 14 │ Fix authentication bug          │ 14m      │ 8     │ $1.43   │
+│ 13 │ Build recommendation engine     │ 2h 10m   │ 21    │ $6.25   │
+│ 12 │ Refactor payment service        │ 1h 45m   │ 14    │ $3.12   │
+│ 11 │ Add user search with filters    │ 55m      │ 6     │ $0.89   │
+└────┴─────────────────────────────────┴──────────┴───────┴─────────┘
+```
+
+---
+
+## cs stats
+
+```text
+cs stats [options]
+```
+
+Show aggregate statistics across all sessions: total sessions, total time, average session length, files changed, commits made, AI tokens used, and total AI cost.
+
+| Flag | Description |
+| --- | --- |
+| `--json` | Machine-readable output |
+
+**Example output**
+
+```text
+$ cs stats
+
+Overall Statistics:
+
+┌───────────────────┬──────────┐
+│ Total Sessions    │ 52       │
+│ Total Time        │ 138h 20m │
+│ Average Session   │ 2h 39m   │
+│ Files Changed     │ 412      │
+│ Total Commits     │ 184      │
+│ AI Tokens Used    │ 3.1M     │
+│ Total AI Cost     │ $104.72  │
+└───────────────────┴──────────┘
+```
+
+---
+
+## cs note
+
+```text
+cs note <message> [options]
+```
+
+Add a timestamped annotation to the active session. Use notes to mark sub-task boundaries, record decisions, or flag items for follow-up without ending the session.
+
+| Flag | Description |
+| --- | --- |
+| `-s, --session <id>` | Attach the note to a specific session by ID instead of the active one |
+| `--json` | Machine-readable output |
+
+```bash
+cs note "Starting refactor phase"
+cs note "Tests passing, moving to docs"
+cs note "Switched to cheaper model for remaining calls" -s 42
+```
+
+Annotations appear in `cs show --json` under the `annotations` array, each with a `message` and `timestamp` field.
+
+---
+
+## cs recover
+
+```text
+cs recover [options]
+```
+
+Bulk-end all sessions older than a given age. Use this as a periodic cleanup command or in CI teardown scripts to avoid accumulating stale open sessions.
+
+| Flag | Default | Description |
+| --- | --- | --- |
+| `--max-age <hours>` | `24` | End all sessions whose start time is older than this many hours |
+| `--json` | — | Machine-readable output |
+
+```bash
+cs recover
+cs recover --max-age 12
+```
+
+<Tip>
+  Run `cs recover --max-age 1` at the top of CI jobs to ensure no stale session from a previous failed run blocks the new one.
+</Tip>

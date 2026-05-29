@@ -1,0 +1,85 @@
+---
+title: "Middleware Hooks: withTracking, BatchTracker, createTrackedClient"
+sidebarTitle: "Middleware"
+description: "costhq/middleware exports withTracking, BatchTracker, and createTrackedClient to wrap any async AI function or existing client with automatic cost tracking."
+---
+
+The `costhq/middleware` module lets you add cost tracking to existing code without swapping out client instances. Instead of replacing `new OpenAI()` with `new TrackedOpenAI()`, you wrap individual functions or entire client objects at the point where tracking makes sense for your architecture.
+
+## Import
+
+```typescript
+import { withTracking, BatchTracker, createTrackedClient } from 'costhq/middleware';
+```
+
+## `withTracking`
+
+`withTracking` wraps any `async` function and records its token usage to the active CostHQ session. The wrapped function has an identical call signature to the original — no call sites change.
+
+```typescript
+import { withTracking } from 'costhq/middleware';
+
+const trackedCreate = withTracking(
+  (opts) => openai.chat.completions.create(opts),
+  {
+    provider: 'openai',
+    model: 'gpt-4o',
+    tokenExtractor: (res) => ({
+      promptTokens: res.usage?.prompt_tokens || 0,
+      completionTokens: res.usage?.completion_tokens || 0
+    })
+  }
+);
+
+const response = await trackedCreate({ model: 'gpt-4o', messages });
+```
+
+**Options:**
+
+| Option | Type | Required | Description |
+| --- | --- | --- | --- |
+| `provider` | `string` | ✅ | AI provider name, e.g. `'openai'`, `'anthropic'`. |
+| `model` | `string` | ✅ | Model name used for pricing lookup. |
+| `tokenExtractor` | `function` | ❌ | Maps the API response to `{ promptTokens, completionTokens }`. Defaults to reading `usage.prompt_tokens` / `usage.completion_tokens` (OpenAI style) or `usage.input_tokens` / `usage.output_tokens` (Anthropic style). |
+
+## `BatchTracker`
+
+`BatchTracker` tracks multiple calls that all share the same provider and model. Construct it once, then call `.track()` for each API call in your loop or batch.
+
+```typescript
+import { BatchTracker } from 'costhq/middleware';
+
+const tracker = new BatchTracker('anthropic', 'claude-sonnet-4');
+
+const response = await tracker.track(
+  () => anthropic.messages.create({ model: 'claude-sonnet-4', messages }),
+  (res) => ({
+    promptTokens: res.usage?.input_tokens || 0,
+    completionTokens: res.usage?.output_tokens || 0
+  })
+);
+```
+
+The second argument to `.track()` is the same `tokenExtractor` as in `withTracking`. If you omit it, `BatchTracker` falls back to the same dual-format default (OpenAI and Anthropic usage shapes).
+
+## `createTrackedClient`
+
+`createTrackedClient` wraps an **existing client object** so that every method call on the returned object is automatically tracked — no function-by-function wrapping needed.
+
+```typescript
+import { createTrackedClient } from 'costhq/middleware';
+
+const trackedClient = createTrackedClient(openai, {
+  provider: 'openai',
+  model: 'gpt-4o'
+});
+
+// All method calls on trackedClient are automatically tracked
+await trackedClient.chat.completions.create({ ... });
+```
+
+Non-function properties on the original client are passed through unchanged.
+
+<Tip>
+  Use `BatchTracker` when all calls in a loop share the same model — its `.track()` method is the lightest-weight option. Use `createTrackedClient` when you want to track an entire existing client object with a single line change. Use `withTracking` when you need fine-grained control over individual functions or different models per call.
+</Tip>

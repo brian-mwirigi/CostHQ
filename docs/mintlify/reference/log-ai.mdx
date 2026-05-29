@@ -1,0 +1,87 @@
+---
+title: "cs log-ai: Log AI Token Usage and Costs to a Session"
+sidebarTitle: "log-ai"
+description: "cs log-ai records AI provider, model, and token counts to the active session. Cost is auto-calculated for 42+ known models; provide -c for others."
+---
+
+`cs log-ai` is how you manually tell CostHQ about an AI API call. You need this command whenever you are running a manual session or a custom agent workflow that is not already routing traffic through the CostHQ proxy. Each invocation creates one AI usage record attached to the active session (or to the session you specify with `-s`).
+
+## Usage
+
+```text
+cs log-ai [options]
+```
+
+## Flags
+
+| Flag | Description |
+| --- | --- |
+| `-p, --provider <name>` | AI provider (required). e.g. `anthropic`, `openai` |
+| `-m, --model <name>` | Model name (required) |
+| `--prompt-tokens <n>` | Input / prompt token count |
+| `--completion-tokens <n>` | Output / completion token count |
+| `-t, --tokens <n>` | Total tokens — use as an alternative to `--prompt-tokens` \+ `--completion-tokens` |
+| `-c, --cost <amount>` | Cost in USD. Auto-calculated from built-in pricing when the model is known; required otherwise |
+| `-s, --session <id>` | Target a specific session by ID instead of the active one |
+| `--agent <name>` | Agent name shown in the dashboard (useful when multiple agents share a session) |
+| `--json` | Machine-readable output |
+
+## Examples
+
+```bash
+# Auto-calculate cost from built-in pricing
+cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 8000 --completion-tokens 2000
+
+# Provide cost manually for an unknown model
+cs log-ai -p openai -m gpt-4o -t 15000 -c 0.125
+
+# Target a specific session, label with agent name
+cs log-ai -p anthropic -m claude-opus-4-6 --prompt-tokens 10000 --completion-tokens 5000 -s 42 --agent "Code Review Bot" --json
+```
+
+## JSON Output
+
+`cs log-ai --json` returns the logged usage entry plus a `pricing` object so you can verify how the cost was calculated:
+
+```json
+{
+  "schemaVersion": 1,
+  "CostHQVersion": "3.1.1",
+  "id": 7,
+  "sessionId": 42,
+  "provider": "anthropic",
+  "model": "claude-sonnet-4",
+  "promptTokens": 8000,
+  "completionTokens": 2000,
+  "tokens": 10000,
+  "cost": 0.054,
+  "pricing": {
+    "source": "built-in",
+    "modelKnown": true,
+    "inputPer1M": 3.0,
+    "outputPer1M": 15.0
+  }
+}
+```
+
+**`pricing.source` values**
+
+| Value | Meaning |
+| --- | --- |
+| `"built-in"` | Cost derived from CostHQ's bundled pricing table |
+| `"custom"` | Cost derived from a price you set with `cs pricing set` |
+| `"manual"` | Cost taken directly from the `-c` flag you provided |
+
+When `modelKnown` is `false`, CostHQ cannot calculate cost automatically — you must supply `-c <amount>` or the entry will be recorded with `cost: 0`. Use `cs pricing set` to add a permanent custom price for that model so future calls calculate automatically.
+
+## Built-In Pricing Coverage
+
+CostHQ ships with built-in pricing for 42\+ models across Anthropic (Claude 3, Claude 3.5, Claude 4 families), OpenAI (GPT-4o, GPT-4, GPT-3.5, o1, o3 families), and OpenAI Codex. For the full list, run:
+
+```bash
+cs pricing list
+```
+
+<Tip>
+  When you use `cs run` or the CostHQ proxy, `cs log-ai` is called automatically for every intercepted API call — you only need this command for manual sessions or custom agent workflows where you control the logging yourself.
+</Tip>

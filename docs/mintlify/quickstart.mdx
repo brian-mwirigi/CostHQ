@@ -1,0 +1,151 @@
+---
+title: "Track Your First AI Agent Session with CostHQ"
+sidebarTitle: "Quick Start"
+description: "Start tracking AI agent costs in under two minutes. Run cs run to wrap any command, or cs start/cs end for manual sessions with full cost summaries."
+---
+
+CostHQ gives you three ways to start tracking immediately: wrap any agent command with `cs run` for fully automatic sessions, install a skill so OpenClaw or Claude Code tracks itself, or use `cs start` and `cs end` to control session boundaries manually. Pick the approach that matches how you work.
+
+<Tabs>
+  <Tab title="cs run (Recommended)">
+    `cs run` is the zero-configuration path for any agent script or one-off command. Prefix your existing command and CostHQ handles the full session lifecycle automatically.
+
+    ```bash
+    cs run python my_agent.py
+    ```
+
+    Here is what happens in sequence when you run that command:
+
+    1. A new session is created (named after the command by default).
+    2. A local HTTP proxy starts on port 3739.
+    3. Your command launches with `ANTHROPIC_BASE_URL` and `OPENAI_BASE_URL` pre-pointed at the proxy — no environment variable setup required on your part.
+    4. Every API call your agent makes is intercepted and logged to the session.
+    5. When the command exits, the session ends and a cost summary prints.
+
+    **Example output:**
+
+    ```text
+      Done  python my_agent.py
+        14m  •  8 files  •  2 commits  •  $1.43 AI cost
+        Top model: claude-3-5-sonnet-20241022
+    ```
+
+    You can pass custom options to `cs run`:
+
+    | Flag | Description |
+    | --- | --- |
+    | `--name <name>` | Give the session a descriptive name instead of the command string |
+    | `--port <port>` | Change the proxy port (default: `3739`) |
+    | `--no-proxy` | Skip the proxy and track session time only |
+
+    ```bash
+    # Custom session name
+    cs run --name "Fix auth bug" python my_agent.py
+    
+    # Multiple-word commands — use -- to separate flags from the command
+    cs run -- npx my-agent --task "refactor payments"
+    ```
+  </Tab>
+  <Tab title="OpenClaw Skill">
+    If you use OpenClaw, install the CostHQ skill once and every future task tracks itself automatically — no `cs run`, no manual steps.
+
+    ```bash
+    npm install -g costhq       # 1. Install the CLI
+    clawhub install CostHQ      # 2. Install the skill
+    # 3. Start a new OpenClaw session — the agent picks it up automatically
+    ```
+
+    Once the skill is installed, the OpenClaw agent will:
+
+    - Run `cs start "task name"` at the beginning of each task.
+    - Log API usage with `cs log-ai` after each AI call.
+    - Check costs mid-task with `cs status --json` during long runs.
+    - Run `cs end` when the task completes and print a cost summary.
+
+    Open the dashboard at any time to review tracked tasks:
+
+    ```bash
+    cs dashboard
+    ```
+
+    To install the skill manually without ClawHub:
+
+    ```bash
+    cp -r $(npm root -g)/costhq/skills/CostHQ ~/.openclaw/skills/
+    ```
+  </Tab>
+  <Tab title="Manual (cs start / cs end)">
+    Use manual session control when you want to set your own session boundaries — for example, across a longer work period that spans multiple commands.
+
+    ```bash
+    # Start a named session
+    cs start "Refactor payment service"
+    
+    # ... do your work, run your agent, write code ...
+    
+    # End the session and print a summary
+    cs end -n "Extracted PaymentService class, 3 tests added"
+    ```
+
+    Check what is active at any time:
+
+    ```bash
+    cs status
+    ```
+
+    View the full detail of the most recent session:
+
+    ```bash
+    cs show
+    cs show --files --commits   # include file and commit lists
+    ```
+
+    If you want API costs tracked automatically during a manual session, start the proxy in a separate terminal before your agent runs:
+
+    ```bash
+    # Terminal 1
+    cs start "Build recommendation engine"
+    cs proxy
+    
+    # Terminal 2 — point your agent at the proxy
+    export ANTHROPIC_BASE_URL=http://127.0.0.1:3739
+    python my_agent.py
+    
+    # Terminal 1 — end the session when done
+    cs end
+    ```
+
+    You can also log AI costs by hand if you know the token counts:
+
+    ```bash
+    cs log-ai -p anthropic -m claude-3-5-sonnet-20241022 -t 25000 -c 0.25
+    ```
+  </Tab>
+</Tabs>
+
+## View the Dashboard
+
+After any session, open the local web dashboard for a visual breakdown of cost trends, model usage, and session history.
+
+```bash
+cs dashboard
+```
+
+This starts a local server and opens `http://localhost:3737` in your browser. The dashboard includes:
+
+- **Overview** — KPI cards, daily cost chart, most expensive sessions
+- **Sessions** — searchable table with per-session cost, duration, files, and commits
+- **Models & Providers** — cost and token breakdown per model
+- **Insights** — file hotspots, activity heatmap, and project-level spend
+- **Alerts** — configure and monitor budget thresholds
+
+The dashboard binds to `127.0.0.1` only. It never sends telemetry or opens external connections.
+
+<Tip>
+  Prefer `cs run` over `cs start`/`cs end` for agent scripts whenever possible. `cs run` eliminates the two most common mistakes: forgetting to end an open session and forgetting to set proxy environment variables. Reserve manual sessions for long interactive work periods where you want explicit control over the session boundary.
+</Tip>
+
+## Next Steps
+
+- [**cs run reference**](/tracking/cs-run) — All flags, proxy options, and examples for wrapping agent commands.
+- [**Manual sessions**](/tracking/manual) — Deep dive into `cs start`, `cs end`, `cs proxy`, and `cs log-ai`.
