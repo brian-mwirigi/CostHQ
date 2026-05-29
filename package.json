@@ -45,8 +45,8 @@
     }
   },
   "scripts": {
-    "build": "tsc && npx vite build --config dashboard/vite.config.ts",
-    "build:cli": "tsc",
+    "build": "tsc && npx vite build --config dashboard/vite.config.ts && node scripts/minify-pro.js",
+    "build:cli": "tsc && node scripts/minify-pro.js",
     "build:dashboard": "npx vite build --config dashboard/vite.config.ts",
     "dev": "tsx src/index.ts",
     "dev:dashboard": "npx vite --config dashboard/vite.config.ts",
@@ -92,7 +92,6 @@
   },
   "files": [
     "dist",
-    "pro",
     "skills",
     "README.md",
     "LICENSE"
@@ -112,6 +111,7 @@
     "react-dom": "^19.2.4",
     "recharts": "^3.7.0",
     "supertest": "^7.2.2",
+    "terser": "^5.48.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vite": "^7.3.1",
