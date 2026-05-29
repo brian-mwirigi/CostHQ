@@ -1,0 +1,110 @@
+---
+title: "CostHQ Session Data Storage: SQLite, Paths & Export"
+sidebarTitle: "Data Storage"
+description: "CostHQ stores all session data in a local SQLite file at ~/.CostHQ/sessions.db. No cloud sync, no telemetry. Learn to back up, export, and reset your data."
+---
+
+All of your session data stays on your machine. CostHQ writes everything to a local SQLite database that is created automatically the first time you run any `cs` command — nothing is sent to a remote server and no account is required.
+
+## Database location
+
+| Platform | Path |
+| --- | --- |
+| Mac / Linux | `~/.CostHQ/sessions.db` |
+| Windows | `C:\Users\<username>\.CostHQ\sessions.db` |
+
+## Custom database path
+
+You can point CostHQ at a different file using the `CODESESSION_DB_PATH` environment variable. This is useful for per-project isolation or test environments:
+
+<Tabs>
+  <Tab title="Mac / Linux">
+    ```bash
+    export CODESESSION_DB_PATH=/path/to/sessions.db
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```powershell
+    $env:CODESESSION_DB_PATH = "C:\path\to\sessions.db"
+    ```
+  </Tab>
+</Tabs>
+
+## Privacy guarantees
+
+- **No cloud sync** — all session data stays on your local machine.
+- **No telemetry** — CostHQ never phones home or sends usage data externally.
+- **No API key storage** — the proxy forwards `Authorization` headers as-is and never writes them to disk.
+- **Full control** — delete or export your data at any time without contacting anyone.
+
+## Backing up and exporting your data
+
+<Tabs>
+  <Tab title="Mac / Linux">
+    ```bash
+    # Copy the database file
+    cp ~/.CostHQ/sessions.db ~/backups/costhq-$(date +%Y%m%d).db
+    
+    # Export session list as plain text
+    cs list -l 1000 > sessions-export.txt
+    
+    # Export as CSV
+    cs export --format csv > sessions.csv
+    
+    # Export as JSON (last 50 sessions)
+    cs export --format json --limit 50 > sessions.json
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```powershell
+    # Copy the database file
+    Copy-Item "$env:USERPROFILE\.CostHQ\sessions.db" "$env:USERPROFILE\backups\costhq-$(Get-Date -Format yyyyMMdd).db"
+    
+    # Export session list as plain text
+    cs list -l 1000 | Out-File sessions-export.txt
+    
+    # Export as CSV
+    cs export --format csv | Out-File sessions.csv
+    
+    # Export as JSON (last 50 sessions)
+    cs export --format json --limit 50 | Out-File sessions.json
+    ```
+  </Tab>
+</Tabs>
+
+## Migration from older versions
+
+If you used CostHQ when it stored data under `~/.devsession/`, your data migrates automatically to `~/.CostHQ/` on first run. The migration **copies** files — it does not delete the old directory. Once you confirm that everything looks correct in the new location, you can safely remove `~/.devsession/` manually.
+
+## Resetting all data
+
+<Warning>
+  Deleting the database is permanent and cannot be undone. Back up the file before you proceed.
+</Warning>
+
+<Tabs>
+  <Tab title="Mac / Linux">
+    ```bash
+    # Back up first!
+    cp ~/.CostHQ/sessions.db ~/sessions-backup.db
+    
+    # Then delete to reset
+    rm ~/.CostHQ/sessions.db
+    ```
+  </Tab>
+  <Tab title="Windows">
+    ```powershell
+    # Back up first!
+    Copy-Item "$env:USERPROFILE\.CostHQ\sessions.db" "$env:USERPROFILE\sessions-backup.db"
+    
+    # Then delete to reset
+    Remove-Item "$env:USERPROFILE\.CostHQ\sessions.db"
+    ```
+  </Tab>
+</Tabs>
+
+CostHQ recreates the database automatically the next time you run any command.
+
+## Concurrency
+
+CostHQ opens the SQLite database in **WAL (Write-Ahead Logging) mode**, which allows multiple agents or terminal sessions on the same machine to write records simultaneously without blocking each other. You can run parallel agent sessions — for example in separate project directories — and all writes land safely in the same database.
