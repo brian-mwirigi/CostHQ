@@ -6,33 +6,36 @@ import { Session, FileChange, Commit, AIUsage, SessionStats, SessionNote } from 
 import { cleanupGit } from './git';
 import { cleanupWatcher } from './watcher';
 
-// Data directory: prefer env override, then ~/.codesession, migrate from legacy ~/.devsession
-const NEW_DB_DIR = process.env.COSTHQ_DATA_DIR || join(homedir(), '.codesession');
-const LEGACY_DB_DIR = join(homedir(), '.devsession');
+// Data directory: prefer env override, then ~/.costhq, migrate from legacy ~/.codesession or ~/.devsession
+const NEW_DB_DIR = process.env.COSTHQ_DATA_DIR || join(homedir(), '.costhq');
 
-// Auto-migrate: if legacy dir exists but new doesn't (skip for custom/test dirs)
-if (!process.env.COSTHQ_DATA_DIR && existsSync(LEGACY_DB_DIR) && !existsSync(NEW_DB_DIR)) {
-  mkdirSync(NEW_DB_DIR, { recursive: true });
-  const legacyDb = join(LEGACY_DB_DIR, 'sessions.db');
-  const newDb = join(NEW_DB_DIR, 'sessions.db');
-  if (existsSync(legacyDb)) {
-    copyFileSync(legacyDb, newDb);
-    // Verify the copied DB opens correctly
-    try {
-      const testDb = new Database(newDb);
-      testDb.pragma('integrity_check');
-      testDb.close();
-    } catch (_) {
-      // Corrupted copy — remove and start fresh
-      try { require('fs').unlinkSync(newDb); } catch (_) {}
+// Auto-migrate: if new dir doesn't exist (skip for custom/test dirs)
+if (!process.env.COSTHQ_DATA_DIR && !existsSync(NEW_DB_DIR)) {
+  const legacyDirs = [join(homedir(), '.codesession'), join(homedir(), '.devsession')];
+  const legacyDir = legacyDirs.find(existsSync);
+  if (legacyDir) {
+    mkdirSync(NEW_DB_DIR, { recursive: true });
+    const legacyDb = join(legacyDir, 'sessions.db');
+    const newDb = join(NEW_DB_DIR, 'sessions.db');
+    if (existsSync(legacyDb)) {
+      copyFileSync(legacyDb, newDb);
+      // Verify the copied DB opens correctly
+      try {
+        const testDb = new Database(newDb);
+        testDb.pragma('integrity_check');
+        testDb.close();
+      } catch (_) {
+        // Corrupted copy — remove and start fresh
+        try { require('fs').unlinkSync(newDb); } catch (_) {}
+      }
+      // Also copy pricing.json if present
+      const legacyPricing = join(legacyDir, 'pricing.json');
+      if (existsSync(legacyPricing)) {
+        copyFileSync(legacyPricing, join(NEW_DB_DIR, 'pricing.json'));
+      }
+      // Inform user (stderr so it doesn't break --json stdout)
+      process.stderr.write(`[CostHQ] Migrated data from ${legacyDir} -> ${NEW_DB_DIR} (old files preserved -- delete manually if desired)\n`);
     }
-    // Also copy pricing.json if present
-    const legacyPricing = join(LEGACY_DB_DIR, 'pricing.json');
-    if (existsSync(legacyPricing)) {
-      copyFileSync(legacyPricing, join(NEW_DB_DIR, 'pricing.json'));
-    }
-    // Inform user (stderr so it doesn't break --json stdout)
-    process.stderr.write(`[CostHQ] Migrated data from ${LEGACY_DB_DIR} -> ${NEW_DB_DIR} (old files preserved -- delete manually if desired)\n`);
   }
 }
 

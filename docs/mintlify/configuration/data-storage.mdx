@@ -1,7 +1,7 @@
 ---
 title: "CostHQ Session Data Storage: SQLite, Paths & Export"
 sidebarTitle: "Data Storage"
-description: "CostHQ stores all session data in a local SQLite file at ~/.codesession/sessions.db. No cloud sync, no telemetry. Learn to back up, export, and reset your data."
+description: "CostHQ stores all session data in a local SQLite file at ~/.costhq/sessions.db. No cloud sync, no telemetry. Learn to back up, export, and reset your data."
 ---
 
 All of your session data stays on your machine. CostHQ writes everything to a local SQLite database that is created automatically the first time you run any `cs` command — nothing is sent to a remote server and no account is required.
@@ -10,22 +10,22 @@ All of your session data stays on your machine. CostHQ writes everything to a lo
 
 | Platform | Path |
 | --- | --- |
-| Mac / Linux | `~/.codesession/sessions.db` |
-| Windows | `C:\Users\<username>\.codesession\sessions.db` |
+| Mac / Linux | `~/.costhq/sessions.db` |
+| Windows | `C:\Users\<username>\.costhq\sessions.db` |
 
 ## Custom database path
 
-You can point CostHQ at a different file using the `CODESESSION_DB_PATH` environment variable. This is useful for per-project isolation or test environments:
+You can point CostHQ at a different file using the `COSTHQ_DATA_DIR` environment variable. This is useful for per-project isolation or test environments:
 
 <Tabs>
   <Tab title="Mac / Linux">
     ```bash
-    export CODESESSION_DB_PATH=/path/to/sessions.db
+    export COSTHQ_DATA_DIR=/path/to/sessions.db
     ```
   </Tab>
   <Tab title="Windows">
     ```powershell
-    $env:CODESESSION_DB_PATH = "C:\path\to\sessions.db"
+    $env:COSTHQ_DATA_DIR = "C:\path\to\sessions.db"
     ```
   </Tab>
 </Tabs>
@@ -43,7 +43,7 @@ You can point CostHQ at a different file using the `CODESESSION_DB_PATH` environ
   <Tab title="Mac / Linux">
     ```bash
     # Copy the database file
-    cp ~/.codesession/sessions.db ~/backups/costhq-$(date +%Y%m%d).db
+    cp ~/.costhq/sessions.db ~/backups/costhq-$(date +%Y%m%d).db
     
     # Export session list as plain text
     cs list -l 1000 > sessions-export.txt
@@ -58,7 +58,7 @@ You can point CostHQ at a different file using the `CODESESSION_DB_PATH` environ
   <Tab title="Windows">
     ```powershell
     # Copy the database file
-    Copy-Item "$env:USERPROFILE\.codesession\sessions.db" "$env:USERPROFILE\backups\costhq-$(Get-Date -Format yyyyMMdd).db"
+    Copy-Item "$env:USERPROFILE\.costhq\sessions.db" "$env:USERPROFILE\backups\costhq-$(Get-Date -Format yyyyMMdd).db"
     
     # Export session list as plain text
     cs list -l 1000 | Out-File sessions-export.txt
@@ -74,7 +74,7 @@ You can point CostHQ at a different file using the `CODESESSION_DB_PATH` environ
 
 ## Migration from older versions
 
-If you used CostHQ when it stored data under `~/.devsession/`, your data migrates automatically to `~/.codesession/` on first run. The migration **copies** files — it does not delete the old directory. Once you confirm that everything looks correct in the new location, you can safely remove `~/.devsession/` manually.
+If you used CostHQ when it stored data under `~/.devsession/`, your data migrates automatically to `~/.costhq/` on first run. The migration **copies** files — it does not delete the old directory. Once you confirm that everything looks correct in the new location, you can safely remove `~/.devsession/` manually.
 
 ## Resetting all data
 
@@ -86,19 +86,19 @@ If you used CostHQ when it stored data under `~/.devsession/`, your data migrate
   <Tab title="Mac / Linux">
     ```bash
     # Back up first!
-    cp ~/.codesession/sessions.db ~/sessions-backup.db
+    cp ~/.costhq/sessions.db ~/sessions-backup.db
     
     # Then delete to reset
-    rm ~/.codesession/sessions.db
+    rm ~/.costhq/sessions.db
     ```
   </Tab>
   <Tab title="Windows">
     ```powershell
     # Back up first!
-    Copy-Item "$env:USERPROFILE\.codesession\sessions.db" "$env:USERPROFILE\sessions-backup.db"
+    Copy-Item "$env:USERPROFILE\.costhq\sessions.db" "$env:USERPROFILE\sessions-backup.db"
     
     # Then delete to reset
-    Remove-Item "$env:USERPROFILE\.codesession\sessions.db"
+    Remove-Item "$env:USERPROFILE\.costhq\sessions.db"
     ```
   </Tab>
 </Tabs>

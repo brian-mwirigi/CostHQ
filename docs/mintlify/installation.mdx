@@ -58,14 +58,14 @@ Use `cs` for day-to-day work.
 
 ## Custom Database Path
 
-By default, CostHQ stores all session data in `~/.codesession/sessions.db`. Set the `CODESESSION_DB_PATH` environment variable to use a different location — useful for test isolation or keeping separate databases per project.
+By default, CostHQ stores all session data in `~/.costhq/sessions.db`. Set the `COSTHQ_DATA_DIR` environment variable to use a different location — useful for test isolation or keeping separate databases per project.
 
 ```bash
 # macOS / Linux
-export CODESESSION_DB_PATH=~/projects/client-a/.codesession.db
+export COSTHQ_DATA_DIR=~/projects/client-a/.costhq.db
 
 # Windows PowerShell
-$env:CODESESSION_DB_PATH = "C:\projects\client-a\.codesession.db"
+$env:COSTHQ_DATA_DIR = "C:\projects\client-a\.costhq.db"
 ```
 
 The database file and its parent directory are created automatically on first use.
@@ -74,7 +74,7 @@ The database file and its parent directory are created automatically on first us
 
 | Platform | Default path |
 | --- | --- |
-| macOS / Linux | `~/.codesession/sessions.db` |
-| Windows | `C:\Users\<username>\.codesession\sessions.db` |
+| macOS / Linux | `~/.costhq/sessions.db` |
+| Windows | `C:\Users\<username>\.costhq\sessions.db` |
 
 You're all set. Continue to [Quick Start](/quickstart) to track your first session.
