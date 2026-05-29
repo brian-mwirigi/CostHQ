@@ -1,0 +1,14 @@
+{
+  "name": "codesession-cli",
+  "version": "3.1.2",
+  "description": "DEPRECATED: This package has been renamed to costhq. Please install costhq instead.",
+  "scripts": {
+    "postinstall": "node postinstall.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brian-mwirigi/costhq.git"
+  },
+  "author": "Brian Mwirigi",
+  "license": "MIT"
+}
