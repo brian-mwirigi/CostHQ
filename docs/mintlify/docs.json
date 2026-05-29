@@ -1,31 +1,45 @@
 {
+  "theme": "luma",
   "name": "CostHQ",
-  "theme": "mint",
   "colors": {
-    "primary": "#3b82f6",
-    "light": "#60a5fa",
-    "dark": "#2563eb"
+    "primary": "#22c55e",
+    "light": "#dcfce7",
+    "dark": "#15803d"
   },
+  "navbar": {
+    "primary": {
+      "type": "github",
+      "href": "https://github.com/brian-mwirigi/CostHQ"
+    }
+  },
+  "$schema": "https://mintlify.com/docs.json",
   "navigation": {
     "tabs": [
       {
-        "tab": "Docs",
+        "tab": "Documentation",
         "groups": [
           {
             "group": "Get Started",
             "pages": [
               "introduction",
-              "quickstart",
               "installation",
-              "index"
+              "quickstart"
             ]
           },
           {
-            "group": "Configuration",
+            "group": "Tracking Methods",
             "pages": [
-              "configuration/data-storage",
-              "configuration/pricing",
-              "configuration/pro-license"
+              "tracking/cs-run",
+              "tracking/proxy",
+              "tracking/manual"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/openclaw",
+              "integrations/claude-code",
+              "integrations/custom-agents"
             ]
           },
           {
@@ -36,37 +50,40 @@
             ]
           },
           {
-            "group": "Integrations",
+            "group": "Configuration",
             "pages": [
-              "integrations/claude-code",
-              "integrations/custom-agents",
-              "integrations/openclaw"
+              "configuration/pricing",
+              "configuration/data-storage",
+              "configuration/pro-license"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference",
+        "groups": [
+          {
+            "group": "CLI Commands",
+            "pages": [
+              "reference/cli-overview",
+              "reference/session-commands",
+              "reference/log-ai",
+              "reference/export-stats"
             ]
           },
           {
-            "group": "Reference",
+            "group": "Node.js SDK",
             "pages": [
               "reference/agent-session",
-              "reference/cli-overview",
-              "reference/error-codes",
-              "reference/export-stats",
               "reference/extensions",
-              "reference/json-output",
-              "reference/log-ai",
-              "reference/middleware",
-              "reference/session-commands"
+              "reference/middleware"
             ]
           },
           {
-            "group": "Sources",
-            "pages": []
-          },
-          {
-            "group": "Tracking",
+            "group": "Agent Contract",
             "pages": [
-              "tracking/cs-run",
-              "tracking/manual",
-              "tracking/proxy"
+              "reference/json-output",
+              "reference/error-codes"
             ]
           }
         ]
