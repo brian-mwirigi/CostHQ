@@ -253,7 +253,7 @@ export default function Alerts() {
       if (alert.hasAlarm && !firedRef.current.has(alert.key)) {
         firedRef.current.add(alert.key);
         playAlarmSound();
-        sendNotification(`codesession — ${alert.label}`, alert.message);
+        sendNotification(`CostHQ — ${alert.label}`, alert.message);
       }
     }
     // Clear fired status for alerts that are no longer active

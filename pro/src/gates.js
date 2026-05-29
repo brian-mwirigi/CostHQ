@@ -8,7 +8,7 @@ exports.requirePro = requirePro;
 exports.getGatedFeatures = getGatedFeatures;
 const license_1 = require("./license");
 const chalk_1 = __importDefault(require("chalk"));
-exports.UPGRADE_URL = 'https://codesession.dev/pro'; // Update this to your Lemon Squeezy storefront or landing page
+exports.UPGRADE_URL = 'https://codesession-cli.lemonsqueezy.com';
 function requirePro(featureName) {
     if ((0, license_1.isPro)())
         return true;
@@ -18,7 +18,7 @@ function requirePro(featureName) {
 }
 function getGatedFeatures() {
     const license = (0, license_1.getLicense)();
-    const pro = license.valid && (license.plan === 'pro' || license.plan === 'enterprise') || license.trial.active;
+    const pro = license.valid && (license.plan === 'pro' || license.plan === 'enterprise');
     const ent = license.valid && license.plan === 'enterprise';
     return {
         insights: pro,

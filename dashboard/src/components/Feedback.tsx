@@ -60,7 +60,7 @@ export default function Feedback() {
     <>
       <div className="page-header">
         <h1 className="page-title">Feedback</h1>
-        <p className="page-subtitle">Help improve codesession by sharing your thoughts</p>
+        <p className="page-subtitle">Help improve CostHQ by sharing your thoughts</p>
       </div>
 
       <div className="card">
@@ -105,7 +105,7 @@ export default function Feedback() {
               }).catch(() => {});
 
               // 2. Open email client via mailto:
-              const subject = encodeURIComponent(`Codesession Feedback: ${feedbackType}`);
+              const subject = encodeURIComponent(`CostHQ Feedback: ${feedbackType}`);
               let bodyText = `Type: ${feedbackType}\n`;
               if (email) bodyText += `From: ${email}\n`;
               bodyText += `\nMessage:\n${message}\n`;
@@ -141,7 +141,7 @@ export default function Feedback() {
                   name="Message"
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
-                  placeholder="What would make codesession better for you?"
+                  placeholder="What would make CostHQ better for you?"
                   rows={5}
                   required
                   style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.5 }}

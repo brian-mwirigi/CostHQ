@@ -48,7 +48,7 @@ const VERSION: string = pkg.version;
 const SCHEMA_VERSION = 1;
 
 program
-  .name('codesession')
+  .name('CostHQ')
   .description('Track AI coding sessions & agent runs — time, files, commits, costs')
   .version(VERSION);
 
@@ -56,14 +56,14 @@ program
 
 /** Emit a structured JSON error and exit 1. */
 function jsonError(code: string, message: string, extra?: Record<string, any>): never {
-  console.log(JSON.stringify({ schemaVersion: SCHEMA_VERSION, codesessionVersion: VERSION, error: { code, message, ...extra } }));
+  console.log(JSON.stringify({ schemaVersion: SCHEMA_VERSION, CostHQVersion: VERSION, error: { code, message, ...extra } }));
   process.exit(1);
   return undefined as never; // unreachable, helps TS
 }
 
 /** Wrap a JSON success payload with schema metadata. */
 function jsonWrap(data: Record<string, any>): Record<string, any> {
-  return { schemaVersion: SCHEMA_VERSION, codesessionVersion: VERSION, ...data };
+  return { schemaVersion: SCHEMA_VERSION, CostHQVersion: VERSION, ...data };
 }
 
 /** Resolve the active session for the current directory (supports parallel sessions). */
@@ -78,7 +78,7 @@ async function resolveActiveSession() {
 function sessionToJSON(session: any, extras?: { files?: any[]; commits?: any[]; aiUsage?: any[]; notes?: any[] }) {
   const obj: any = {
     schemaVersion: SCHEMA_VERSION,
-    codesessionVersion: VERSION,
+    CostHQVersion: VERSION,
     id: session.id,
     name: session.name,
     status: session.status,
@@ -375,8 +375,8 @@ async function fireWebhook(session: any) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
-  } catch (e) {
-    // Silently fail webhook errors
+  } catch (e: any) {
+    console.error(chalk.red(`\n[ERROR] Webhook failed: ${e.message}`));
   }
 }
 
@@ -466,7 +466,7 @@ program
       })));
     } else {
       displayStats(stats);
-      console.log(chalk.dim('\n  Star on GitHub: https://github.com/brian-mwirigi/codesession-cli'));
+      console.log(chalk.dim('\n  Star on GitHub: https://github.com/brian-mwirigi/costhq'));
     }
   });
 
@@ -559,13 +559,13 @@ program
       promptTokens: promptTk || undefined,
       completionTokens: completionTk || undefined,
       cost,
-      agentName: options.agent || process.env.CODESESSION_AGENT_NAME || undefined,
+      agentName: options.agent || process.env.COSTHQ_AGENT_NAME || undefined,
       timestamp: new Date().toISOString(),
     });
 
     // Re-read the updated session
     const updated = getSession(session.id!);
-    const resolvedAgent = options.agent || process.env.CODESESSION_AGENT_NAME || undefined;
+    const resolvedAgent = options.agent || process.env.COSTHQ_AGENT_NAME || undefined;
     if (options.json) {
       console.log(JSON.stringify(jsonWrap({
         logged: { provider: options.provider, model: options.model, tokens: totalTokens, promptTokens: promptTk || undefined, completionTokens: completionTk || undefined, cost, agentName: resolvedAgent },
@@ -645,7 +645,7 @@ program
       if (license.valid && license.plan !== 'free') {
         console.log(chalk.gray(`Plan: ${license.plan.toUpperCase()} (${license.email})`));
       } else {
-        console.log(chalk.gray(`Plan: Free | Upgrade to Pro: https://codesession.dev/pro`));
+        console.log(chalk.gray(`Plan: Free | Upgrade to Pro: https://CostHQ.dev/pro`));
       }
     }
   });
@@ -846,13 +846,13 @@ program
     if (!transcriptPath || !sessionId) process.exit(0);
     if (!fs.existsSync(transcriptPath)) process.exit(0);
 
-    // Must have an active codesession — if not, exit WITHOUT saving position
+    // Must have an active CostHQ — if not, exit WITHOUT saving position
     // so tokens aren't lost (they'll be picked up on the next call after cs start)
     const session = await resolveActiveSession();
     if (!session) process.exit(0);
 
     // Track position so we don't double-count across multiple Stop events
-    const posDir = path.join(os.tmpdir(), 'codesession-autolog');
+    const posDir = path.join(os.tmpdir(), 'CostHQ-autolog');
     try { fs.mkdirSync(posDir, { recursive: true }); } catch {}
     const posFile = path.join(posDir, `${sessionId}.pos`);
     let lastPos = 0;
@@ -916,7 +916,7 @@ program
       promptTokens: promptTokens || undefined,
       completionTokens: completionTokens || undefined,
       cost,
-      agentName: options.agent || process.env.CODESESSION_AGENT_NAME || 'Claude Code',
+      agentName: options.agent || process.env.COSTHQ_AGENT_NAME || 'Claude Code',
       timestamp: new Date().toISOString(),
     });
 

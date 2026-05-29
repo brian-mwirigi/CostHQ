@@ -31,7 +31,7 @@ export default function Donate() {
   return (
     <>
       <div className="page-header">
-        <h1 className="page-title">Support codesession-cli</h1>
+        <h1 className="page-title">Support costhq</h1>
         <p className="page-subtitle">
           If this tool saves you money on AI costs, consider supporting its development
         </p>
@@ -65,7 +65,7 @@ export default function Donate() {
       <div className="card" style={{ marginTop: 24 }}>
         <div className="card-body">
           <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
-            codesession-cli is free and open source, built and maintained by{' '}
+            costhq is free and open source, built and maintained by{' '}
             <a href="https://github.com/brian-mwirigi" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>
               Brian Mwirigi
             </a>{' '}

@@ -73,7 +73,7 @@ function killOwnStaleProcess(port: number): boolean {
           removePidFile(port);
           return false;
         }
-        cmdLine = execSync(`wmic process where processid=${pid} get commandline`, { timeout: 2000, encoding: 'utf-8' });
+        cmdLine = execSync(`powershell.exe -NoProfile -NonInteractive -Command "(Get-CimInstance -ClassName Win32_Process -Filter 'ProcessId=${pid}').CommandLine"`, { timeout: 2000, encoding: 'utf-8' });
       } else {
         cmdLine = readFileSync(`/proc/${pid}/cmdline`, 'utf-8').replace(/\0/g, ' ');
       }
@@ -122,7 +122,7 @@ function isPortInUse(port: number): Promise<boolean> {
 
 // ── API route builder ──────────────────────────────────────
 
-export function buildApiRouter(): Router {
+export function buildApiRouter(port: number = 3737): Router {
   const router = Router();
 
   router.use((_req, res, next) => {
@@ -130,21 +130,20 @@ export function buildApiRouter(): Router {
     next();
   });
 
+  // ── CSRF protection for mutating endpoints ──────────────
   router.use((req, res, next) => {
-    if (req.method !== 'GET' && req.method !== 'HEAD' && req.method !== 'OPTIONS') {
-      const origin = req.headers.origin || req.headers.referer;
-      if (origin) {
-        try {
-          const url = new URL(origin);
-          if (url.origin !== 'http://localhost:3737' && url.origin !== 'http://127.0.0.1:3737') {
-            return res.status(403).json({ error: 'CSRF' });
-          }
-        } catch {
-          return res.status(403).json({ error: 'CSRF' });
-        }
-      }
+    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
+      return next();
     }
-    next();
+    const origin = req.headers.origin;
+    const referer = req.headers.referer;
+    if (!origin && !referer) return next();
+    
+    const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
+    if (origin && allowed.some(a => origin.startsWith(a))) return next();
+    if (referer && allowed.some(a => referer.startsWith(a))) return next();
+    
+    res.status(403).json({ error: 'CSRF' });
   });
 
   router.get('/stats', (_req, res) => {
@@ -429,7 +428,7 @@ export function buildApiRouter(): Router {
       const mime = format === 'csv' ? 'text/csv' : 'application/json';
       const ext = format === 'csv' ? 'csv' : 'json';
       res.setHeader('Content-Type', mime);
-      res.setHeader('Content-Disposition', `attachment; filename="codesession-export.${ext}"`);
+      res.setHeader('Content-Disposition', `attachment; filename="CostHQ-export.${ext}"`);
       res.send(data);
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -625,23 +624,7 @@ export function startDashboard(options: DashboardOptions = {}): void {
   // JSON body limit (4kb -- we only read, but defence-in-depth)
   app.use(express.json({ limit: '50kb' }));
 
-  // ── CSRF protection for mutating endpoints ──────────────
-  // Block cross-origin POST/PUT/DELETE requests to prevent CSRF attacks.
-  // Any website could otherwise POST to http://127.0.0.1:3737/api/v1/reset.
-  app.use('/api', (req: Request, res: Response, next: NextFunction) => {
-    if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') {
-      return next();
-    }
-    const origin = req.headers.origin;
-    const referer = req.headers.referer;
-    // Allow requests with no Origin (curl, Postman, server-to-server)
-    if (!origin && !referer) return next();
-    // Allow same-origin requests
-    const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`, `http://${host}:${port}`];
-    if (origin && allowed.some(a => origin.startsWith(a))) return next();
-    if (referer && allowed.some(a => referer.startsWith(a))) return next();
-    res.status(403).json({ error: 'Cross-origin mutating request blocked (CSRF protection)' });
-  });
+  // CSRF protection is now handled inside buildApiRouter
 
   // ── Token auth for non-localhost ─────────────────────────
 
@@ -659,7 +642,10 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // ── Static files with cache headers ──────────────────────
 
-  const staticDir = join(__dirname, '../dashboard-ui');
+  // Find the static directory whether running from dist/src/ (prod) or src/ (dev via tsx)
+  const prodStaticDir = join(__dirname, '../dashboard-ui');
+  const devStaticDir = join(__dirname, '../../dist/dashboard-ui');
+  const staticDir = existsSync(prodStaticDir) ? prodStaticDir : devStaticDir;
 
   // Hashed assets (js/css with content hash in filename): immutable, 1 year
   app.use('/assets', express.static(join(staticDir, 'assets'), {
@@ -688,7 +674,7 @@ export function startDashboard(options: DashboardOptions = {}): void {
 
   // ── Mount API router at /api/v1 (canonical) and /api (compat alias) ──
 
-  const apiRouter = buildApiRouter();
+  const apiRouter = buildApiRouter(port);
   app.use('/api/v1', apiRouter);
   app.use('/api', apiRouter);
 
@@ -699,7 +685,7 @@ export function startDashboard(options: DashboardOptions = {}): void {
   let servedHtml: string;
   if (!existsSync(indexPath)) {
     // Dashboard UI hasn't been built — serve a helpful error instead of crashing
-    servedHtml = `<!DOCTYPE html><html><head><title>codesession dashboard</title></head><body style="font-family:system-ui;padding:40px;color:#ccc;background:#1a1a2e">
+    servedHtml = `<!DOCTYPE html><html><head><title>CostHQ Dashboard</title></head><body style="font-family:system-ui;padding:40px;color:#ccc;background:#1a1a2e">
       <h1>Dashboard not built</h1>
       <p>Run <code style="color:#00d9ff">npm run build:dashboard</code> first, then restart <code style="color:#00d9ff">cs dashboard</code>.</p>
     </body></html>`;
@@ -744,7 +730,7 @@ export function startDashboard(options: DashboardOptions = {}): void {
         if (token) out.token = token;
         console.log(JSON.stringify(out));
       } else {
-        console.log(`\n  codesession dashboard -> ${url}`);
+        console.log(`\n  CostHQ Dashboard -> ${url}`);
         if (token) {
           console.log(`  Session token: ${token}`);
           console.log(`  Authenticated URL: ${url}?token=${token}`);
@@ -804,9 +790,9 @@ export function startDashboard(options: DashboardOptions = {}): void {
         }
       } else {
         if (jsonMode) {
-          console.log(JSON.stringify({ error: 'EADDRINUSE', message: `Port ${port} is in use by another process (not a codesession dashboard)`, port }));
+          console.log(JSON.stringify({ error: 'EADDRINUSE', message: `Port ${port} is in use by another process (not a CostHQ Dashboard)`, port }));
         } else {
-          console.error(`  Port ${port} is in use by another process (not a codesession dashboard).`);
+          console.error(`  Port ${port} is in use by another process (not a CostHQ Dashboard).`);
           console.error(`  Try: cs dashboard --port ${port + 1}\n`);
         }
         process.exit(1);

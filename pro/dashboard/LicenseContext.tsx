@@ -6,6 +6,11 @@ export interface LicenseInfo {
   plan: 'free' | 'pro' | 'enterprise';
   email: string | null;
   seats: number;
+  status?: string;
+  lastValidatedAt?: string;
+  nextValidationAt?: string;
+  validationRequired?: boolean;
+  reason?: string;
   trial: {
     active: boolean;
     daysRemaining: number;
@@ -16,6 +21,7 @@ interface LicenseContextType extends LicenseInfo {
   isPro: boolean;
   loading: boolean;
   activate: (key: string) => Promise<{ success: boolean; error?: string }>;
+  refresh: () => Promise<{ success: boolean; error?: string }>;
   deactivate: () => Promise<void>;
 }
 
@@ -23,10 +29,10 @@ const LicenseContext = createContext<LicenseContextType | undefined>(undefined);
 
 export function LicenseProvider({ children }: { children: ReactNode }) {
   const [info, setInfo] = useState<LicenseInfo>({
-    valid: true,
-    plan: 'pro',
+    valid: false,
+    plan: 'free',
     email: null,
-    seats: 1,
+    seats: 0,
     trial: { active: false, daysRemaining: 0 }
   });
   const [loading, setLoading] = useState(true);
@@ -66,10 +72,20 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     } catch {}
   };
 
-  const isPro = true; // Temporarily unlocked
+  const refresh = async () => {
+    try {
+      const res = await postApi<{ success: boolean; error?: string }>('/api/license/refresh');
+      await fetchLicense();
+      return res.success ? { success: true } : { success: false, error: res.error || 'Refresh failed' };
+    } catch (e: any) {
+      return { success: false, error: e.message || 'Refresh failed' };
+    }
+  };
+
+  const isPro = info.valid && (info.plan === 'pro' || info.plan === 'enterprise');
 
   return (
-    <LicenseContext.Provider value={{ ...info, isPro, loading, activate, deactivate }}>
+    <LicenseContext.Provider value={{ ...info, isPro, loading, activate, refresh, deactivate }}>
       {children}
     </LicenseContext.Provider>
   );

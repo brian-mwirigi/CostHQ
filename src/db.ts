@@ -7,11 +7,11 @@ import { cleanupGit } from './git';
 import { cleanupWatcher } from './watcher';
 
 // Data directory: prefer env override, then ~/.codesession, migrate from legacy ~/.devsession
-const NEW_DB_DIR = process.env.CODESESSION_DATA_DIR || join(homedir(), '.codesession');
+const NEW_DB_DIR = process.env.COSTHQ_DATA_DIR || join(homedir(), '.codesession');
 const LEGACY_DB_DIR = join(homedir(), '.devsession');
 
 // Auto-migrate: if legacy dir exists but new doesn't (skip for custom/test dirs)
-if (!process.env.CODESESSION_DATA_DIR && existsSync(LEGACY_DB_DIR) && !existsSync(NEW_DB_DIR)) {
+if (!process.env.COSTHQ_DATA_DIR && existsSync(LEGACY_DB_DIR) && !existsSync(NEW_DB_DIR)) {
   mkdirSync(NEW_DB_DIR, { recursive: true });
   const legacyDb = join(LEGACY_DB_DIR, 'sessions.db');
   const newDb = join(NEW_DB_DIR, 'sessions.db');
@@ -32,7 +32,7 @@ if (!process.env.CODESESSION_DATA_DIR && existsSync(LEGACY_DB_DIR) && !existsSyn
       copyFileSync(legacyPricing, join(NEW_DB_DIR, 'pricing.json'));
     }
     // Inform user (stderr so it doesn't break --json stdout)
-    process.stderr.write(`[codesession] Migrated data from ${LEGACY_DB_DIR} -> ${NEW_DB_DIR} (old files preserved -- delete manually if desired)\n`);
+    process.stderr.write(`[CostHQ] Migrated data from ${LEGACY_DB_DIR} -> ${NEW_DB_DIR} (old files preserved -- delete manually if desired)\n`);
   }
 }
 
@@ -158,9 +158,22 @@ db.exec(`
     hash TEXT PRIMARY KEY,
     response TEXT NOT NULL,
     cost REAL NOT NULL,
+    hits INTEGER DEFAULT 0,
+    saved_cost REAL DEFAULT 0,
+    last_hit TEXT,
     timestamp TEXT NOT NULL
   )
 `);
+
+try {
+  db.exec('ALTER TABLE proxy_cache ADD COLUMN hits INTEGER DEFAULT 0');
+} catch (_) { /* column already exists */ }
+try {
+  db.exec('ALTER TABLE proxy_cache ADD COLUMN saved_cost REAL DEFAULT 0');
+} catch (_) { /* column already exists */ }
+try {
+  db.exec('ALTER TABLE proxy_cache ADD COLUMN last_hit TEXT');
+} catch (_) { /* column already exists */ }
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS config (
@@ -182,6 +195,7 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_file_changes_session_id ON file_changes(session_id);
   CREATE INDEX IF NOT EXISTS idx_file_changes_file_path ON file_changes(file_path);
   CREATE INDEX IF NOT EXISTS idx_commits_session_id ON commits(session_id);
+  CREATE INDEX IF NOT EXISTS idx_proxy_cache_timestamp ON proxy_cache(timestamp);
 `);
 
 export function createSession(session: Omit<Session, 'id'>): number {
@@ -446,6 +460,7 @@ export function clearAllData(): void {
   const transaction = db.transaction(() => {
     db.prepare('DELETE FROM session_notes').run();
     db.prepare('DELETE FROM feedback').run();
+    db.prepare('DELETE FROM proxy_cache').run();
     db.prepare('DELETE FROM ai_usage').run();
     db.prepare('DELETE FROM file_changes').run();
     db.prepare('DELETE FROM commits').run();
@@ -481,8 +496,84 @@ export function getProxyCache(hash: string): { response: string; cost: number } 
 
 export function setProxyCache(hash: string, response: string, cost: number): void {
   const timestamp = new Date().toISOString();
-  const stmt = db.prepare('INSERT OR REPLACE INTO proxy_cache (hash, response, cost, timestamp) VALUES (?, ?, ?, ?)');
+  const stmt = db.prepare(`
+    INSERT INTO proxy_cache (hash, response, cost, timestamp)
+    VALUES (?, ?, ?, ?)
+    ON CONFLICT(hash) DO UPDATE SET
+      response = excluded.response,
+      cost = excluded.cost,
+      timestamp = excluded.timestamp
+  `);
   stmt.run(hash, response, cost, timestamp);
+}
+
+export function recordProxyCacheHit(hash: string, savedCost: number): void {
+  const timestamp = new Date().toISOString();
+  const stmt = db.prepare(`
+    UPDATE proxy_cache
+    SET hits = COALESCE(hits, 0) + 1,
+        saved_cost = ROUND((COALESCE(saved_cost, 0) + ?) * 10000000000) / 10000000000,
+        last_hit = ?
+    WHERE hash = ?
+  `);
+  stmt.run(savedCost, timestamp, hash);
+}
+
+export function getProxyCacheStats(): {
+  entries: number;
+  hits: number;
+  savedCost: number;
+  storedCost: number;
+  lastHit?: string;
+  newestEntry?: string;
+} {
+  const row = db.prepare(`
+    SELECT COUNT(*) as entries,
+           SUM(COALESCE(hits, 0)) as hits,
+           SUM(COALESCE(saved_cost, 0)) as saved_cost,
+           SUM(COALESCE(cost, 0)) as stored_cost,
+           MAX(last_hit) as last_hit,
+           MAX(timestamp) as newest_entry
+    FROM proxy_cache
+  `).get() as any;
+  return {
+    entries: row.entries || 0,
+    hits: row.hits || 0,
+    savedCost: Math.round((row.saved_cost || 0) * 10000) / 10000,
+    storedCost: Math.round((row.stored_cost || 0) * 10000) / 10000,
+    lastHit: row.last_hit || undefined,
+    newestEntry: row.newest_entry || undefined,
+  };
+}
+
+export function getSpendPolicyStats(project?: string): {
+  totalCost: number;
+  todayCost: number;
+  projectCost: number;
+} {
+  const total = db.prepare('SELECT SUM(ai_cost) as cost FROM sessions').get() as any;
+  const today = db.prepare(`
+    SELECT SUM(ai_cost) as cost
+    FROM sessions
+    WHERE date(start_time) = date('now', 'localtime')
+  `).get() as any;
+
+  let projectCost = 0;
+  if (project) {
+    const row = db.prepare(`
+      SELECT SUM(ai_cost) as cost
+      FROM sessions
+      WHERE COALESCE(git_root, working_directory) = ?
+         OR working_directory = ?
+    `).get(project, project) as any;
+    projectCost = row.cost || 0;
+  }
+
+  return {
+    totalCost: Math.round((total.cost || 0) * 1e10) / 1e10,
+    todayCost: Math.round((today.cost || 0) * 1e10) / 1e10,
+    projectCost: Math.round(projectCost * 1e10) / 1e10,
+  };
 }
 
 // ─── Session Notes / Annotations ──────────────────────────────

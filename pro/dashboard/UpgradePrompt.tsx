@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLicense } from './LicenseContext';
 
-const UPGRADE_URL = 'https://codesession.dev/pro';
+const UPGRADE_URL = 'https://codesession-cli.lemonsqueezy.com';
 
 interface Props {
   feature: string;

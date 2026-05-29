@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useLicense } from './LicenseContext';
 
-const UPGRADE_URL = 'https://codesession.dev/pro';
+const UPGRADE_URL = 'https://codesession-cli.lemonsqueezy.com';
 
 export default function LicenseSettings() {
-  const { valid, plan, email, seats, trial, activate, deactivate } = useLicense();
+  const { valid, plan, email, seats, trial, status, lastValidatedAt, nextValidationAt, validationRequired, reason, activate, refresh, deactivate } = useLicense();
   const [key, setKey] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +26,14 @@ export default function LicenseSettings() {
     }
   };
 
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    const res = await refresh();
+    if (!res.success) setError(res.error || 'Refresh failed');
+    setLoading(false);
+  };
+
   return (
     <div className="page">
       <header className="page-header">
@@ -44,16 +52,33 @@ export default function LicenseSettings() {
               <ul className="license-details">
                 <li><strong>Email:</strong> {email}</li>
                 <li><strong>Type:</strong> Lifetime</li>
+                {status && <li><strong>Status:</strong> {status}</li>}
+                {lastValidatedAt && <li><strong>Last validated:</strong> {new Date(lastValidatedAt).toLocaleString()}</li>}
+                {nextValidationAt && <li><strong>Next check:</strong> {new Date(nextValidationAt).toLocaleString()}</li>}
                 {plan === 'enterprise' && <li><strong>Seats:</strong> {seats}</li>}
               </ul>
+              <button className="modal-btn" onClick={handleRefresh} disabled={loading} style={{ marginRight: 8 }}>
+                {loading ? 'Checking...' : 'Refresh License'}
+              </button>
               <button className="modal-btn modal-btn--danger" onClick={handleDeactivate}>Deactivate License</button>
             </div>
           ) : (
             <div className="license-inactive">
+              {reason && (
+                <div className="license-trial">
+                  <p><strong>{validationRequired ? 'License Refresh Required' : 'License Inactive'}</strong></p>
+                  <p>{reason}</p>
+                  {validationRequired && (
+                    <button className="modal-btn" onClick={handleRefresh} disabled={loading}>
+                      {loading ? 'Checking...' : 'Refresh License'}
+                    </button>
+                  )}
+                </div>
+              )}
               {trial.active && (
                 <div className="license-trial">
-                  <p><strong>14-Day Pro Trial Active</strong></p>
-                  <p>{trial.daysRemaining} days remaining. All Pro features are unlocked.</p>
+                  <p><strong>Trial window available</strong></p>
+                  <p>{trial.daysRemaining} days remaining. Enter a Lemon Squeezy license key to unlock Pro on this machine.</p>
                 </div>
               )}
               <div className="license-activate-form">

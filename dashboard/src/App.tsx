@@ -13,9 +13,10 @@ import ShareCard from './components/ShareCard';
 import Onboarding from './components/Onboarding';
 import Banner from './components/Banner';
 import Console from './components/Console';
+import ProOps from './components/ProOps';
 import { LicenseProvider } from '../../pro/dashboard/LicenseContext';
 
-export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share' | 'console';
+export type Page = 'overview' | 'sessions' | 'models' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share' | 'console' | 'pro';
 
 // ── URL-based routing (no react-router needed) ─────────────
 
@@ -34,6 +35,7 @@ function parseRoute(): { page: Page; sessionId: number | null } {
   if (path === '/feedback') return { page: 'feedback', sessionId: null };
   if (path === '/share') return { page: 'share', sessionId: null };
   if (path === '/console') return { page: 'console', sessionId: null };
+  if (path === '/pro') return { page: 'pro', sessionId: null };
   return { page: 'overview', sessionId: null };
 }
 
@@ -55,24 +57,9 @@ export default function App() {
     }
   }, []);
 
-  // Telemetry ping
-  useEffect(() => {
-    if (localStorage.getItem('cs-telemetry') === '1') {
-      try {
-        fetch('https://api.brianmunene.me/telemetry?tool=codesession', { mode: 'no-cors' }).catch(() => {});
-      } catch (e) {
-        // ignore errors
-      }
-    }
-  }, []);
-
   const completeOnboarding = useCallback(() => {
     localStorage.setItem('cs-onboarded', '1');
     setShowOnboarding(false);
-    // Send initial telemetry ping if just opted in
-    if (localStorage.getItem('cs-telemetry') === '1') {
-      try { fetch('https://api.brianmunene.me/telemetry?tool=codesession', { mode: 'no-cors' }).catch(() => {}); } catch(e) {}
-    }
   }, []);
 
   // Sync state on browser back/forward
@@ -129,6 +116,8 @@ export default function App() {
             <Donate />
           ) : page === 'console' ? (
             <Console />
+          ) : page === 'pro' ? (
+            <ProOps />
           ) : (
             <ModelBreakdown />
           )}

@@ -49,7 +49,7 @@ function drawShareImage(stats: Stats, topModel: ModelBreakdown | null): HTMLCanv
   ctx.fillStyle = '#a1a1aa'; // var(--text-secondary)
   ctx.font = '600 12px Inter, system-ui, sans-serif';
   ctx.letterSpacing = '1px';
-  ctx.fillText('CODESESSION', 40, 50);
+  ctx.fillText('COSTHQ', 40, 50);
   ctx.letterSpacing = '0px';
 
   // ── Title
@@ -303,22 +303,13 @@ export default function ShareCard() {
     ? models.reduce((top, m) => (m.totalCost > top.totalCost ? m : top), models[0])
     : null;
 
-  if (!isPro) {
-    return (
-      <UpgradePrompt 
-        feature="Share Stats" 
-        description="Generate beautiful, shareable cards of your AI coding journey to flex on social media."
-      />
-    );
-  }
-
   const handleDownload = useCallback(() => {
     if (!stats) return;
     const canvas = drawShareImage(stats, topModel);
     canvasRef.current = canvas;
 
     const link = document.createElement('a');
-    link.download = 'codesession-stats.png';
+    link.download = 'CostHQ-stats.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   }, [stats, topModel]);
@@ -344,6 +335,15 @@ export default function ShareCard() {
       handleDownload();
     }
   }, [stats, topModel, handleDownload]);
+
+  if (!isPro) {
+    return (
+      <UpgradePrompt 
+        feature="Share Stats" 
+        description="Generate beautiful, shareable cards of your AI coding journey to flex on social media."
+      />
+    );
+  }
 
   if (!stats) {
     return <div className="loading">Loading…</div>;
@@ -373,7 +373,7 @@ export default function ShareCard() {
         <div style={styles.previewGlow} />
 
         <div style={styles.inner}>
-          <div style={styles.brand}>CODESESSION</div>
+          <div style={styles.brand}>COSTHQ</div>
           <h2 style={styles.title}>My AI Coding Stats</h2>
           <div style={styles.divider} />
 

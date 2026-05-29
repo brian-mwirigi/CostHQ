@@ -1,20 +1,20 @@
 {
-  "name": "codesession-cli",
+  "name": "costhq",
   "version": "3.1.1",
-  "description": "Track AI agent & coding session costs — files, commits, tokens. Free & Pro tiers available. Works with Claude Code and any AI agent.",
-  "homepage": "https://www.brianmunene.me/codesession-cli",
+  "description": "CostHQ: Track AI agent & coding session costs — files, commits, tokens. Free & Pro tiers available.",
+  "homepage": "https://costhq.mintlify.app/",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/brian-mwirigi/codesession-cli.git"
+    "url": "git+https://github.com/brian-mwirigi/CostHQ.git"
   },
   "bugs": {
-    "url": "https://github.com/brian-mwirigi/codesession-cli/issues"
+    "url": "https://github.com/brian-mwirigi/CostHQ/issues"
   },
   "funding": "https://github.com/sponsors/brian-mwirigi",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "bin": {
-    "codesession": "dist/src/index.js",
+    "costhq": "dist/src/index.js",
     "cs": "dist/src/index.js"
   },
   "exports": {

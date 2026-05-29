@@ -1,4 +1,4 @@
-import { calculateCost, ensureTrackingSession, addAIUsage } from './db';
+import { calculateCost, ensureTrackingSession, addAIUsage, addNote } from './db';
 
 // A generic wrapper function for AI token tracking
 export async function trackedAI<T>(
@@ -23,6 +23,9 @@ export async function trackedAI<T>(
         promptTokens: tokens.promptTokens, completionTokens: tokens.completionTokens,
         cost, timestamp: new Date().toISOString(),
       });
+      if (notes) {
+        addNote(sessionId, notes);
+      }
     }
     throw err;
   }
@@ -35,6 +38,10 @@ export async function trackedAI<T>(
     promptTokens: tokens.promptTokens, completionTokens: tokens.completionTokens,
     cost, timestamp: new Date().toISOString(),
   });
+  
+  if (notes) {
+    addNote(sessionId, notes);
+  }
   
   return result;
 }

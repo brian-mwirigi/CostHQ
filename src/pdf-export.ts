@@ -5,6 +5,15 @@ import chalk from 'chalk';
 import { getSession, getAIUsage, getFileChanges, getCommits } from './db';
 import { formatDuration } from './formatters';
 
+function escapeHtml(unsafe: string): string {
+  return (unsafe || '').toString()
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 export async function exportSessionToPDF(sessionId: number, outputPath?: string) {
   const session = getSession(sessionId);
   if (!session) {
@@ -16,7 +25,7 @@ export async function exportSessionToPDF(sessionId: number, outputPath?: string)
   const files = getFileChanges(sessionId);
   const commits = getCommits(sessionId);
 
-  const outPath = outputPath || path.join(process.cwd(), `codesession-receipt-${sessionId}.pdf`);
+  const outPath = outputPath || path.join(process.cwd(), `CostHQ-receipt-${sessionId}.pdf`);
 
   console.log(chalk.blue(`\nGenerating professional invoice for session ${sessionId}...`));
 
@@ -57,7 +66,7 @@ export async function exportSessionToPDF(sessionId: number, outputPath?: string)
         </div>
       </div>
 
-      <h1>Session Overview: ${session.name}</h1>
+      <h1>Session Overview: ${escapeHtml(session.name)}</h1>
       
       <div class="summary-cards">
         <div class="card">
@@ -91,8 +100,8 @@ export async function exportSessionToPDF(sessionId: number, outputPath?: string)
         <tbody>
           ${aiUsage.map(u => `
             <tr>
-              <td><span style="text-transform: capitalize">${u.provider}</span></td>
-              <td>${u.model}</td>
+              <td><span style="text-transform: capitalize">${escapeHtml(u.provider)}</span></td>
+              <td>${escapeHtml(u.model)}</td>
               <td>${u.tokens.toLocaleString()}</td>
               <td class="cost-col">$${u.cost.toFixed(4)}</td>
             </tr>
@@ -106,7 +115,7 @@ export async function exportSessionToPDF(sessionId: number, outputPath?: string)
       </table>
 
       <div class="footer">
-        Generated automatically by Codesession CLI
+        Generated automatically by CostHQ CLI
       </div>
     </body>
     </html>

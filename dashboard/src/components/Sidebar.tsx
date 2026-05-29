@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../App';
 import { fetchApi, postApi } from '../api';
-import { IconOverview, IconSessions, IconModels, IconActivity, IconBarChart, IconBell, IconKey, IconRefreshCw, IconDownload, IconMessageSquare, IconHeart } from './Icons';
+import { IconOverview, IconSessions, IconModels, IconActivity, IconBarChart, IconBell, IconKey, IconRefreshCw, IconDownload, IconMessageSquare, IconHeart, IconTarget } from './Icons';
 import ProBadge from '../../../pro/dashboard/ProBadge';
 import { useLicense } from '../../../pro/dashboard/LicenseContext';
 
@@ -11,6 +11,7 @@ const NAV: { page: Page; icon: React.ReactNode; label: string }[] = [
   { page: 'models', icon: <IconModels size={16} />, label: 'Models' },
   { page: 'insights', icon: <IconBarChart size={16} />, label: 'Insights' },
   { page: 'alerts', icon: <IconBell size={16} />, label: 'Alerts' },
+  { page: 'pro', icon: <IconTarget size={16} />, label: 'Pro Ops' },
   { page: 'share', icon: <IconDownload size={16} />, label: 'Share Stats' },
   { page: 'console', icon: <IconActivity size={16} />, label: 'Console' },
   { page: 'feedback', icon: <IconMessageSquare size={16} />, label: 'Feedback' },
@@ -70,7 +71,7 @@ export default function Sidebar({ page, onNavigate }: Props) {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <span className="brand-icon"><IconActivity size={18} /></span>
-          <span className="brand-text">codesession</span>
+          <span className="brand-text">CostHQ</span>
         </div>
 
         <nav className="sidebar-nav" role="navigation" aria-label="Main Navigation">
@@ -83,7 +84,7 @@ export default function Sidebar({ page, onNavigate }: Props) {
             >
               <span className="nav-icon" aria-hidden="true">{n.icon}</span>
               <span>{n.label}</span>
-              {['insights', 'alerts', 'share'].includes(n.page) && <ProBadge />}
+              {['insights', 'alerts', 'share', 'pro'].includes(n.page) && <ProBadge />}
             </button>
           ))}
         </nav>
@@ -120,7 +121,7 @@ export default function Sidebar({ page, onNavigate }: Props) {
             {' '}Start Fresh
           </button>
           <div className="sidebar-footer-row">
-            <a href="https://github.com/brian-mwirigi/codesession-cli" target="_blank" rel="noreferrer" className="sidebar-link star-cta" aria-label="Star on GitHub">
+            <a href="https://github.com/brian-mwirigi/CostHQ" target="_blank" rel="noreferrer" className="sidebar-link star-cta" aria-label="Star on GitHub">
               <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25z"/></svg>
               {' '}Star on GitHub
             </a>

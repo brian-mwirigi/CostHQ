@@ -1,13 +1,14 @@
 <div align="center">
-  <h1>codesession-cli</h1>
+  <h1>CostHQ</h1>
   <p><strong>Track what your AI agents actually cost</strong></p>
 
   <p>
-    <a href="https://www.npmjs.com/package/codesession-cli"><img src="https://img.shields.io/npm/v/codesession-cli?color=brightgreen" alt="npm version"></a>
-    <a href="https://www.npmjs.com/package/codesession-cli"><img src="https://img.shields.io/npm/dy/codesession-cli?color=blue" alt="npm downloads"></a>
-    <a href="https://clawhub.ai/brian-mwirigi/codesession"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
-    <a href="https://github.com/brian-mwirigi/codesession-cli"><img src="https://img.shields.io/github/stars/brian-mwirigi/codesession-cli?style=social" alt="GitHub stars"></a>
-    <a href="https://github.com/brian-mwirigi/codesession-cli/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/codesession-cli" alt="license"></a>
+    <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/v/costhq?color=brightgreen" alt="npm version"></a>
+    <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/dy/costhq?color=blue" alt="npm downloads"></a>
+    <a href="https://www.npmjs.com/package/codesession-cli"><img src="https://img.shields.io/npm/dt/codesession-cli?label=legacy%20downloads&color=grey" alt="legacy npm downloads"></a>
+    <a href="https://clawhub.ai/brian-mwirigi/costhq"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
+    <a href="https://github.com/brian-mwirigi/costhq"><img src="https://img.shields.io/github/stars/brian-mwirigi/costhq?style=social" alt="GitHub stars"></a>
+    <a href="https://github.com/brian-mwirigi/costhq/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/costhq" alt="license"></a>
   </p>
 
   <p><em>Track agent runs • Monitor files • Log commits • Enforce budgets</em></p>
@@ -17,9 +18,10 @@
   <p>
     <a href="https://github.com/sponsors/brian-mwirigi"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github" alt="Sponsor"></a>
     <a href="https://buymeacoffee.com/brianmwirigi"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%E2%98%95-yellow?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
-    <a href="https://www.npmjs.com/package/codesession-cli"> npm</a> •
-    <a href="https://github.com/brian-mwirigi/codesession-cli"> GitHub</a> •
-    <a href="https://github.com/brian-mwirigi/codesession-cli/blob/main/CHANGELOG.md"> Changelog</a> •
+    <a href="https://www.npmjs.com/package/costhq"> npm</a> •
+    <a href="https://github.com/brian-mwirigi/costhq"> GitHub</a> •
+    <a href="https://costhq.mintlify.app/"> Documentation</a> •
+    <a href="https://github.com/brian-mwirigi/costhq/blob/main/CHANGELOG.md"> Changelog</a> •
     <a href="#openclaw-skill"> OpenClaw Skill</a>
   </p>
 

@@ -6,7 +6,7 @@
  * 
  * @example
  * ```typescript
- * import { AgentSession } from 'codesession-cli/agents';
+ * import { AgentSession } from 'costhq/agents';
  * 
  * const session = new AgentSession('Refactor auth module', {
  *   budget: 5.00,

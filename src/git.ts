@@ -9,15 +9,9 @@ interface GitSession {
 }
 
 const sessions = new Map<number, GitSession>();
-const gitInstances = new Map<string, SimpleGit>();
 
 function getGit(cwd: string): SimpleGit {
-  let g = gitInstances.get(cwd);
-  if (!g) {
-    g = simpleGit(cwd);
-    gitInstances.set(cwd, g);
-  }
-  return g;
+  return simpleGit(cwd);
 }
 
 export function initGit(sessionId: number, cwd: string): void {

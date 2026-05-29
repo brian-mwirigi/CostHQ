@@ -1,25 +1,26 @@
 ---
-name: codesession
-description: Track agent session costs, file changes, and git commits with codesession-cli. Enforces budget limits and provides detailed session analytics with a web dashboard. v3.0.3 - Added Console UI, Pro features unlocked, updated NPM links.
-metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/codesession-cli", "requires": {"bins": ["cs"]}, "install": [{"id": "npm", "kind": "node", "package": "codesession-cli", "bins": ["cs"], "label": "Install codesession-cli (npm)"}]}}
+name: costhq
+license: MIT-0
+description: Track agent session costs, file changes, and git commits with costhq. Enforces budget limits and provides detailed session analytics with a web dashboard. v3.0.3 - Added Console UI, Pro features unlocked, updated NPM links.
+metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/costhq", "requires": {"bins": ["cs"]}, "install": [{"id": "npm", "kind": "node", "package": "costhq", "bins": ["cs"], "label": "Install costhq (npm)"}]}}
 ---
 
-# Session Cost Tracking (codesession-cli)
+# Session Cost Tracking (costhq)
 
 Track agent session costs, file changes, and git commits. Enforces budget limits and provides detailed session analytics with a full web dashboard.
 
 **Latest: v3.0.3** - Console dashboard UI, unlocked Pro architecture, updated NPM links.
 
-📦 [npm](https://www.npmjs.com/package/codesession-cli) • ⭐ [GitHub](https://github.com/brian-mwirigi/codesession-cli) • 📝 [Changelog](https://github.com/brian-mwirigi/codesession-cli/blob/main/CHANGELOG.md)
+📦 [npm](https://www.npmjs.com/package/costhq) • ⭐ [GitHub](https://github.com/brian-mwirigi/costhq) • 📝 [Changelog](https://github.com/brian-mwirigi/costhq/blob/main/CHANGELOG.md)
 
 ## Installation
 
 ```bash
 # 1. Install the CLI globally from npm
-npm install -g codesession-cli
+npm install -g costhq
 
 # 2. Install the OpenClaw skill
-clawhub install codesession
+clawhub install costhq
 ```
 
 After installing, the `cs` command is available globally. The OpenClaw agent will automatically use it to track sessions.
@@ -33,7 +34,7 @@ After installing, the `cs` command is available globally. The OpenClaw agent wil
 > | **Windows** | `npm install -g windows-build-tools` or install Visual Studio Build Tools |
 > | **Alpine** | `apk add build-base python3` |
 >
-> Data is stored locally at `~/.codesession/sessions.db`.
+> Data is stored locally at `~/.CostHQ/sessions.db`.
 
 ## When to use
 
@@ -82,13 +83,13 @@ Cost is auto-calculated from a configurable pricing table (17+ built-in models).
 ```bash
 cs status --json
 ```
-Returns JSON with current session cost, tokens, files changed, duration. All JSON responses include `schemaVersion` and `codesessionVersion` fields.
+Returns JSON with current session cost, tokens, files changed, duration. All JSON responses include `schemaVersion` and `CostHQVersion` fields.
 
 ### End session and get summary
 ```bash
 cs end -n "completion notes" --json
 ```
-When ending, codesession automatically scans git for all files changed and commits made since the session started -- even if `--json` mode was used (no live watcher needed).
+When ending, CostHQ automatically scans git for all files changed and commits made since the session started -- even if `--json` mode was used (no live watcher needed).
 
 ### Web Dashboard
 ```bash
@@ -187,11 +188,11 @@ Periodically check if the CLI is up to date (e.g. at session start or once per d
 ```bash
 # Compare installed version to latest on npm:
 cs --version          # installed version
-npm view codesession-cli version  # latest on npm
+npm view costhq version  # latest on npm
 ```
 
 If the installed version is behind, notify the user:
-> "codesession-cli update available: v3.0.2 -> v3.0.3. Run `npm install -g codesession-cli` to update."
+> "costhq update available: v3.0.2 -> v3.0.3. Run `npm install -g costhq` to update."
 
 Don't block the workflow for an update — just inform and continue.
 

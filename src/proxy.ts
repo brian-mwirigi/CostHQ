@@ -1,8 +1,9 @@
 import express from 'express';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
-import { getProxyCache, setProxyCache } from './db';
+import { getProxyCache, setProxyCache, recordProxyCacheHit } from './db';
 import { loadPricing } from './db';
+import { getProPolicy } from '../pro/src/policies';
 
 const app = express();
 
@@ -22,7 +23,7 @@ function calculateOpenAICost(usage: any, model: string, pricing: Record<string, 
   // Try to find exact model or fallback
   let rate = pricing[model];
   if (!rate) {
-    const fallbackModel = Object.keys(pricing).find(k => model.includes(k));
+    const fallbackModel = Object.keys(pricing).sort((a, b) => b.length - a.length).find(k => model.includes(k));
     if (fallbackModel) {
       rate = pricing[fallbackModel];
     }
@@ -57,12 +58,16 @@ app.use(async (req, res) => {
   const bodyBuffer = req.body instanceof Buffer ? req.body : Buffer.from(req.body || '');
   const reqHash = hashRequest(bodyBuffer, authHeader);
 
+  const policy = getProPolicy();
+
   // Check Semantic Cache (only for POST requests like completions)
-  if (req.method === 'POST') {
+  if (policy.cacheEnabled && req.method === 'POST') {
     const cached = getProxyCache(reqHash);
     if (cached) {
+      recordProxyCacheHit(reqHash, cached.cost);
       console.log(chalk.green(`[CACHE HIT] served from local cache. Saved $${cached.cost.toFixed(4)}`));
-      res.setHeader('X-Codesession-Cache', 'HIT');
+      res.setHeader('X-CostHQ-Cache', 'HIT');
+      res.setHeader('X-CostHQ-Saved-Cost', cached.cost.toFixed(6));
       res.setHeader('Content-Type', 'application/json');
       return res.status(200).send(cached.response);
     }
@@ -88,12 +93,12 @@ app.use(async (req, res) => {
     fetchRes.headers.forEach((value, key) => {
       res.setHeader(key, value);
     });
-    res.setHeader('X-Codesession-Cache', 'MISS');
+    res.setHeader('X-CostHQ-Cache', 'MISS');
     res.status(fetchRes.status);
     res.send(resBody);
 
     // If it was a successful POST, cache it
-    if (req.method === 'POST' && fetchRes.status === 200) {
+    if (policy.cacheEnabled && req.method === 'POST' && fetchRes.status === 200) {
       try {
         const json = JSON.parse(resBody);
         let cost = 0;
@@ -116,7 +121,7 @@ app.use(async (req, res) => {
 export function startProxy(port: number = 3739) {
   app.listen(port, '127.0.0.1', () => {
     console.log(chalk.cyan(`
-🚀 Codesession Semantic Caching Proxy running on http://127.0.0.1:${port}
+🚀 CostHQ Semantic Caching Proxy running on http://127.0.0.1:${port}
     
 To use with OpenAI clients, set:
   OPENAI_BASE_URL=http://127.0.0.1:${port}/openai/v1

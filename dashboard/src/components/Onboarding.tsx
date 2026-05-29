@@ -3,11 +3,11 @@ import { IconClock, IconDollar, IconFile, IconGitCommit, IconActivity } from './
 
 const steps = [
   {
-    title: 'Welcome to codesession',
+    title: 'Welcome to CostHQ',
     content: (
       <div>
         <p style={{ fontSize: 14, color: 'var(--text-secondary)', lineHeight: 1.6, margin: '0 0 20px' }}>
-          <strong style={{ color: 'var(--text-primary)' }}>codesession</strong> is your personal dashboard for tracking AI-assisted coding sessions.
+          <strong style={{ color: 'var(--text-primary)' }}>CostHQ</strong> is your personal dashboard for tracking AI-assisted coding sessions.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[

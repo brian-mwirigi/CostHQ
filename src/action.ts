@@ -15,7 +15,7 @@ async function run() {
       throw new Error(`Invalid budget_limit: ${budgetLimitStr}`);
     }
 
-    core.info(`💰 Initializing Codesession Budget Breaker...`);
+    core.info(`💰 Initializing CostHQ Budget Breaker...`);
     core.info(`   Budget Limit: $${budgetLimit.toFixed(2)}`);
 
     const cwd = process.cwd();
@@ -75,7 +75,7 @@ async function run() {
     const finalCost = session.aiCost || 0;
 
     core.info('==========================================');
-    core.info('🧾 CODESESSION CI RECEIPT');
+    core.info('🧾 COSTHQ CI RECEIPT');
     core.info('==========================================');
     core.info(`Total API Cost:   $${finalCost.toFixed(4)}`);
     core.info(`Tokens Used:      ${session.aiTokens || 0}`);

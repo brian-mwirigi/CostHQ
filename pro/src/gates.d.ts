@@ -1,4 +1,4 @@
-export declare const UPGRADE_URL = "https://codesession.dev/pro";
+export declare const UPGRADE_URL = "https://codesession-cli.lemonsqueezy.com";
 export declare function requirePro(featureName: string): boolean;
 export declare function getGatedFeatures(): {
     insights: boolean;

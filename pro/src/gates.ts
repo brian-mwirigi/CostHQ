@@ -1,7 +1,7 @@
 import { isPro, getLicense } from './license';
 import chalk from 'chalk';
 
-export const UPGRADE_URL = 'https://codesession.dev/pro'; // Update this to your Lemon Squeezy storefront or landing page
+export const UPGRADE_URL = 'https://codesession-cli.lemonsqueezy.com';
 
 export function requirePro(featureName: string): boolean {
   if (isPro()) return true;
@@ -14,7 +14,7 @@ export function requirePro(featureName: string): boolean {
 
 export function getGatedFeatures() {
   const license = getLicense();
-  const pro = license.valid && (license.plan === 'pro' || license.plan === 'enterprise') || license.trial.active;
+  const pro = license.valid && (license.plan === 'pro' || license.plan === 'enterprise');
   const ent = license.valid && license.plan === 'enterprise';
 
   return {
