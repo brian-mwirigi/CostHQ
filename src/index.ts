@@ -43,7 +43,14 @@ import { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/sr
 import { requirePro } from '../pro/src/gates';
 
 const program = new Command();
-const pkg = require('../../package.json');
+let pkg;
+try {
+  // when compiled to dist/src/index.js
+  pkg = require('../../package.json');
+} catch {
+  // when running src/index.ts directly with tsx
+  pkg = require('../package.json');
+}
 const VERSION: string = pkg.version;
 const SCHEMA_VERSION = 1;
 

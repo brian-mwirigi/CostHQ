@@ -18,6 +18,7 @@ import {
 } from './db';
 import { getGitDiff, getCommitDiff, getGitDiffStats, getGitRoot, getGitHead, initGit, startGitPolling, stopGitPolling } from './git';
 import { getLicense, activateLicense, deactivateLicense } from '../pro/src/license';
+import { getProOpsSummary } from '../pro/src/policies';
 import { startWatcher, stopWatcher } from './watcher';
 
 interface DashboardOptions {
@@ -415,6 +416,14 @@ export function buildApiRouter(port: number = 3737): Router {
   router.get('/pricing', (_req, res) => {
     try {
       res.json(loadPricing());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/pro/ops', (_req, res) => {
+    try {
+      res.json(getProOpsSummary());
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
