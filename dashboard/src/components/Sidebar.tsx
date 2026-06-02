@@ -9,9 +9,11 @@ const NAV: { page: Page; icon: React.ReactNode; label: string }[] = [
   { page: 'overview', icon: <IconOverview size={16} />, label: 'Overview' },
   { page: 'sessions', icon: <IconSessions size={16} />, label: 'Sessions' },
   { page: 'models', icon: <IconModels size={16} />, label: 'Models' },
+  { page: 'local-models', icon: <IconModels size={16} />, label: 'Local Models' },
   { page: 'insights', icon: <IconBarChart size={16} />, label: 'Insights' },
   { page: 'alerts', icon: <IconBell size={16} />, label: 'Alerts' },
   { page: 'pro', icon: <IconTarget size={16} />, label: 'Pro Ops' },
+  { page: 'audit', icon: <IconTarget size={16} />, label: 'Compliance' },
   { page: 'share', icon: <IconDownload size={16} />, label: 'Share Stats' },
   { page: 'console', icon: <IconActivity size={16} />, label: 'Console' },
   { page: 'feedback', icon: <IconMessageSquare size={16} />, label: 'Feedback' },
@@ -84,7 +86,7 @@ export default function Sidebar({ page, onNavigate }: Props) {
             >
               <span className="nav-icon" aria-hidden="true">{n.icon}</span>
               <span>{n.label}</span>
-              {['insights', 'alerts', 'share', 'pro'].includes(n.page) && <ProBadge />}
+              {['insights', 'alerts', 'share', 'pro', 'audit'].includes(n.page) && <ProBadge />}
             </button>
           ))}
         </nav>

@@ -514,6 +514,39 @@ export function buildApiRouter(port: number = 3737): Router {
     }
   });
 
+  router.get('/team', (_req, res) => {
+    try {
+      const { getTeamIdentity } = require('../pro/src/team');
+      res.json(getTeamIdentity() || {});
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.post('/team', (req, res) => {
+    try {
+      const license = getLicense();
+      if (!license.valid || license.plan !== 'enterprise') {
+        return res.status(403).json({ error: 'Team identity requires an Enterprise license' });
+      }
+      const { setTeamIdentity, clearTeamIdentity } = require('../pro/src/team');
+      
+      if (req.body.clear) {
+        clearTeamIdentity();
+        return res.json({});
+      }
+
+      const { team, member, role, department } = req.body;
+      if (!team || !member) {
+        return res.status(400).json({ error: 'team and member are required' });
+      }
+      const identity = setTeamIdentity({ team, member, role, department });
+      res.json(identity);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   router.get('/export', (req, res) => {
     try {
       const format = (req.query.format as string) === 'csv' ? 'csv' : 'json';
@@ -545,6 +578,13 @@ export function buildApiRouter(port: number = 3737): Router {
     }
     try {
       clearAllData();
+      
+      const license = getLicense();
+      if (license.valid && license.plan === 'enterprise') {
+        const { logAuditEvent } = require('../pro/src/audit');
+        logAuditEvent('data.reset', { method: 'dashboard_ui' });
+      }
+
       res.json({ ok: true, message: 'All session data cleared' });
     } catch (e: any) {
       res.status(500).json({ error: e.message });

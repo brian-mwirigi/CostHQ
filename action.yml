@@ -1,4 +1,4 @@
-name: 'Codesession Budget Breaker'
+name: 'CostHQ Budget Breaker'
 description: 'Runs AI agents in CI and fails the build if they exceed a set cost limit'
 author: 'Brian Mwirigi'
 

@@ -40,6 +40,18 @@ export async function postApi<T>(path: string, body?: any, extraHeaders?: Record
   return res.json();
 }
 
+export async function deleteApi<T>(path: string): Promise<T> {
+  const cleanPath = path.replace(/^\/api\//, '/');
+  const url = `${API_BASE}${cleanPath}`;
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  
+  const res = await fetch(url, { method: 'DELETE', headers });
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json();
+}
+
 export async function fetchDiff(sessionId: number, filePath?: string): Promise<string> {
   const token = getToken();
   const params = new URLSearchParams();

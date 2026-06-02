@@ -46,6 +46,7 @@ import {
   isLocalProvider, calculateLocalCost, getLocalModelRate,
   parseDuration, detectOllamaModels, autoRegisterOllamaModels
 } from './local-models';
+import { logAuditEvent } from '../pro/src/audit';
 
 const program = new Command();
 let pkg;
@@ -246,6 +247,14 @@ program
       status: 'active',
     });
 
+    if (isPro() && getLicense().plan === 'enterprise') {
+      logAuditEvent('session.start', {
+        sessionId,
+        name,
+        directory: scopeDir,
+      });
+    }
+
     // Initialize git tracking
     initGit(sessionId, scopeDir);
 
@@ -344,6 +353,14 @@ program
     }
 
     endSession(session.id!, new Date().toISOString(), options.notes);
+
+    if (isPro() && getLicense().plan === 'enterprise') {
+      logAuditEvent('session.end', {
+        sessionId: session.id,
+        duration: session.duration,
+        notes: options.notes,
+      });
+    }
 
     const updated = getSession(session.id!);
     if (updated) {
@@ -608,6 +625,16 @@ program
       agentName: options.agent || process.env.COSTHQ_AGENT_NAME || undefined,
       timestamp: new Date().toISOString(),
     });
+
+    if (isPro() && getLicense().plan === 'enterprise') {
+      logAuditEvent('ai.usage', {
+        sessionId: session.id,
+        provider: options.provider,
+        model: options.model,
+        tokens: totalTokens,
+        cost,
+      });
+    }
 
     // Re-read the updated session
     const updated = getSession(session.id!);
