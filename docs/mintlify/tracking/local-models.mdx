@@ -1,0 +1,135 @@
+---
+title: "Local Model Tracking: Ollama, llama.cpp, vLLM, LM Studio"
+sidebarTitle: "Local Models"
+description: "Track AI usage for self-hosted models where cost is compute-time based. Register models with a $/hr GPU rate, auto-detect Ollama, and log usage with --duration."
+---
+
+When you run AI models locally — on Ollama, llama.cpp, vLLM, LM Studio, or any other self-hosted inference server — there is no per-token API bill. Your real cost is electricity and GPU time. CostHQ lets you register local models with a **cost-per-hour** rate so you can track compute costs alongside your cloud API spend in the same dashboard.
+
+## Quick start
+
+```bash
+# 1. Register a local model with your GPU's hourly compute cost
+cs local-models add ollama/llama3 --cost-per-hour 0.50 --gpu "RTX 4090"
+
+# 2. Start a session as usual
+cs start "Local AI work"
+
+# 3. Log usage with --duration instead of --cost
+cs log-ai -p ollama -m llama3 --tokens 5000 --duration 2m30s
+
+# 4. Check the session — cost is computed from duration × rate
+cs status
+```
+
+## Cost formula
+
+```
+cost = (durationSeconds / 3600) × costPerHour
+```
+
+For example, 2 minutes 30 seconds on a model registered at $0.50/hr:
+
+```
+(150 / 3600) × 0.50 = $0.0208
+```
+
+## Managing local models
+
+### Register a model
+
+```bash
+cs local-models add <provider>/<model> --cost-per-hour <rate> [--gpu <name>] [--notes <text>]
+```
+
+| Parameter | Description |
+| --- | --- |
+| `<provider>/<model>` | Provider and model name, e.g. `ollama/llama3`, `vllm/mistral-7b` |
+| `--cost-per-hour <rate>` | USD per hour of GPU compute |
+| `--gpu <name>` | Optional GPU identifier (e.g. `"RTX 4090"`, `"M2 Ultra"`) |
+| `--notes <text>` | Optional notes |
+
+### List registered models
+
+```bash
+cs local-models list [--json]
+```
+
+### Remove a model
+
+```bash
+cs local-models remove <provider>/<model>
+```
+
+## Auto-detect Ollama models
+
+If you have Ollama running locally, CostHQ can scan `localhost:11434` and register all available models in one command:
+
+```bash
+cs local-models detect --cost-per-hour 0.50 --gpu "RTX 4090"
+```
+
+This hits Ollama's `GET /api/tags` endpoint, pulls every loaded model name, and registers them all with the rate you specify.
+
+## Logging local model usage
+
+Use the standard `cs log-ai` command with the new `--duration` flag:
+
+```bash
+# Duration accepts multiple formats
+cs log-ai -p ollama -m llama3 --tokens 5000 --duration 120        # plain seconds
+cs log-ai -p ollama -m llama3 --tokens 5000 --duration 2m30s      # human format
+cs log-ai -p ollama -m llama3 --tokens 5000 --duration 1h         # hours
+cs log-ai -p ollama -m llama3 --tokens 5000 --duration 1h30m      # combined
+```
+
+### The `--local` flag
+
+CostHQ auto-recognizes these providers as local: `ollama`, `llamacpp`, `llama.cpp`, `vllm`, `lmstudio`, `localai`, `jan`, `koboldcpp`. If your provider isn't in that list, use the `--local` flag to explicitly tell CostHQ to use compute-time costing:
+
+```bash
+cs log-ai -p my-custom-server -m meta/llama-3-70b --tokens 8000 --local --duration 3m
+```
+
+## JSON output
+
+When you log a local model call with `--json`, the `pricing` object shows `source: "local"`:
+
+```json
+{
+  "logged": {
+    "provider": "ollama",
+    "model": "llama3",
+    "tokens": 10000,
+    "cost": 0.0416666667
+  },
+  "pricing": {
+    "source": "local",
+    "modelKnown": true,
+    "inputPer1M": 0,
+    "outputPer1M": 0,
+    "costPerHour": 0.5,
+    "durationSeconds": 300
+  }
+}
+```
+
+## Estimating your GPU cost per hour
+
+If you're not sure what `--cost-per-hour` rate to use, here are some reference points:
+
+| Hardware | Estimated $/hr | Source |
+| --- | --- | --- |
+| RTX 4090 (electricity only) | $0.10–$0.20 | ~450W TDP × local electricity rate |
+| RTX 4090 (cloud rental) | $0.40–$0.80 | RunPod, Vast.ai spot pricing |
+| A100 80GB (cloud) | $1.50–$3.00 | AWS, GCP, Azure on-demand |
+| M2 Ultra (Mac Studio) | $0.05–$0.15 | Apple Silicon power draw |
+| H100 (cloud) | $2.50–$5.00 | AWS, GCP on-demand |
+
+<Tip>
+  Pick a rate that makes sense for your setup. You can always update it later with `cs local-models add` — it upserts, so re-registering the same model replaces the old rate.
+</Tip>
+
+<Note>
+  Local model configurations are stored in `~/.costhq/local-models.json`. This file is independent from the session database and can be version-controlled or shared across machines.
+</Note>

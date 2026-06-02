@@ -17,6 +17,16 @@ export function formatCost(cost: number): string {
   return `$${cost.toFixed(2)}`;
 }
 
+export function formatComputeTime(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  const m = Math.floor(seconds / 60);
+  const s = Math.round(seconds % 60);
+  if (m < 60) return s > 0 ? `${m}m ${s}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm > 0 ? `${h}h ${rm}m` : `${h}h`;
+}
+
 export function displaySession(session: Session): void {
   console.log(chalk.bold.cyan(`\nSession: ${session.name}\n`));
 

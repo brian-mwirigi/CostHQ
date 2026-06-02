@@ -16,12 +16,14 @@ cs log-ai [options]
 
 | Flag | Description |
 | --- | --- |
-| `-p, --provider <name>` | AI provider (required). e.g. `anthropic`, `openai` |
+| `-p, --provider <name>` | AI provider (required). e.g. `anthropic`, `openai`, `ollama` |
 | `-m, --model <name>` | Model name (required) |
 | `--prompt-tokens <n>` | Input / prompt token count |
 | `--completion-tokens <n>` | Output / completion token count |
 | `-t, --tokens <n>` | Total tokens — use as an alternative to `--prompt-tokens` \+ `--completion-tokens` |
 | `-c, --cost <amount>` | Cost in USD. Auto-calculated from built-in pricing when the model is known; required otherwise |
+| `--duration <duration>` | Compute duration for local models (e.g. `120`, `2m30s`, `1h`). Used to calculate cost instead of `-c`. |
+| `--local` | Force CostHQ to treat this as a local model and calculate cost from duration × hourly rate. |
 | `-s, --session <id>` | Target a specific session by ID instead of the active one |
 | `--agent <name>` | Agent name shown in the dashboard (useful when multiple agents share a session) |
 | `--json` | Machine-readable output |
@@ -34,6 +36,9 @@ cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 8000 --completion-toke
 
 # Provide cost manually for an unknown model
 cs log-ai -p openai -m gpt-4o -t 15000 -c 0.125
+
+# Log local model usage with compute duration
+cs log-ai -p ollama -m llama3 -t 5000 --duration 2m30s
 
 # Target a specific session, label with agent name
 cs log-ai -p anthropic -m claude-opus-4-6 --prompt-tokens 10000 --completion-tokens 5000 -s 42 --agent "Code Review Bot" --json

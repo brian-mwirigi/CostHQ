@@ -38,9 +38,14 @@ import {
   displayFileChanges,
   displayCommits
 } from './formatters';
-import { formatDuration, formatCost } from './formatters';
+import { formatDuration, formatCost, formatComputeTime } from './formatters';
 import { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/src/license';
 import { requirePro } from '../pro/src/gates';
+import {
+  addLocalModel, removeLocalModel, getLocalModels, isLocalModel,
+  isLocalProvider, calculateLocalCost, getLocalModelRate,
+  parseDuration, detectOllamaModels, autoRegisterOllamaModels
+} from './local-models';
 
 const program = new Command();
 let pkg;
@@ -482,12 +487,14 @@ program
 program
   .command('log-ai')
   .description('Log AI usage for active session')
-  .requiredOption('-p, --provider <provider>', 'AI provider (anthropic, openai, google, etc.)')
+  .requiredOption('-p, --provider <provider>', 'AI provider (anthropic, openai, ollama, etc.)')
   .requiredOption('-m, --model <model>', 'Model name')
   .option('-t, --tokens <tokens>', 'Total tokens', parseInt)
   .option('-c, --cost <cost>', 'Cost in dollars (auto-calculated if omitted)', parseFloat)
   .option('--prompt-tokens <n>', 'Prompt/input tokens', parseInt)
   .option('--completion-tokens <n>', 'Completion/output tokens', parseInt)
+  .option('--duration <duration>', 'Compute duration for local models (e.g. 120, 2m30s, 1h)')
+  .option('--local', 'Force treat this as a local model (cost from duration × hourly rate)')
   .option('--agent <name>', 'Agent name (optional)')
   .option('-s, --session <id>', 'Target a specific session by ID', parseInt)
   .option('--json', 'Output JSON (for agents)')
@@ -530,9 +537,40 @@ program
     }
 
     let cost = options.cost;
-    let pricingInfo: { source: 'built-in' | 'custom' | 'manual'; modelKnown: boolean; inputPer1M: number; outputPer1M: number } | undefined;
+    let pricingInfo: { source: 'built-in' | 'custom' | 'manual' | 'local'; modelKnown: boolean; inputPer1M: number; outputPer1M: number; costPerHour?: number; durationSeconds?: number } | undefined;
+    let durationSec: number | undefined;
 
-    if (cost === undefined || cost === null) {
+    // Parse --duration if provided
+    if (options.duration) {
+      const parsed = parseDuration(options.duration);
+      if (parsed === null || parsed < 0) {
+        const msg = `Invalid duration "${options.duration}". Use seconds (120), or human format (2m30s, 1h).`;
+        if (options.json) jsonError('invalid_duration', msg);
+        else console.log(chalk.red(`\n${msg}\n`));
+        return;
+      }
+      durationSec = parsed;
+    }
+
+    // Determine if this is a local model
+    const treatAsLocal = options.local || isLocalModel(options.provider, options.model) || isLocalProvider(options.provider);
+
+    if (treatAsLocal && (cost === undefined || cost === null)) {
+      // Local model: cost from duration × hourly rate
+      const rate = getLocalModelRate(options.provider, options.model);
+      if (rate !== null && durationSec !== undefined) {
+        cost = calculateLocalCost(options.provider, options.model, durationSec);
+        pricingInfo = { source: 'local', modelKnown: true, inputPer1M: 0, outputPer1M: 0, costPerHour: rate, durationSeconds: durationSec };
+      } else if (rate !== null && durationSec === undefined) {
+        // Local model registered but no --duration provided — cost is $0, just log tokens
+        cost = 0;
+        pricingInfo = { source: 'local', modelKnown: true, inputPer1M: 0, outputPer1M: 0, costPerHour: rate };
+      } else {
+        // Unregistered local model — cost $0, just log tokens
+        cost = 0;
+        pricingInfo = { source: 'local', modelKnown: false, inputPer1M: 0, outputPer1M: 0 };
+      }
+    } else if (cost === undefined || cost === null) {
       // Auto-calculate from pricing table (try provider/model -> model)
       const auto = estimateCost(options.model, promptTk ?? totalTokens * 0.7, completionTk ?? totalTokens * 0.3, options.provider);
       if (auto !== null) {
@@ -566,6 +604,7 @@ program
       promptTokens: promptTk || undefined,
       completionTokens: completionTk || undefined,
       cost,
+      durationSeconds: durationSec || undefined,
       agentName: options.agent || process.env.COSTHQ_AGENT_NAME || undefined,
       timestamp: new Date().toISOString(),
     });
@@ -581,7 +620,8 @@ program
       })));
     } else {
       const agentStr = resolvedAgent ? ` (${resolvedAgent})` : '';
-      console.log(chalk.green(`\nLogged: ${totalTokens.toLocaleString()} tokens, ${formatCost(cost)}${agentStr}`));
+      const durationStr = durationSec ? ` (${formatComputeTime(durationSec)} compute)` : '';
+      console.log(chalk.green(`\nLogged: ${totalTokens.toLocaleString()} tokens, ${formatCost(cost)}${durationStr}${agentStr}`));
       console.log(chalk.gray(`  Session total: ${(updated?.aiTokens || 0).toLocaleString()} tokens, ${formatCost(updated?.aiCost || 0)}\n`));
     }
   });
@@ -1064,6 +1104,187 @@ cloudCmd
     syncSessionsToCloud();
   });
 
+// ─── Local Models ──────────────────────────────────────────────
+
+const localModelsCmd = program.command('local-models').description('Manage local AI model configurations (Ollama, llama.cpp, vLLM, etc.)');
+
+localModelsCmd
+  .command('add <provider/model>')
+  .description('Register a local model with compute cost rate')
+  .requiredOption('--cost-per-hour <rate>', 'Cost per hour of GPU compute in USD', parseFloat)
+  .option('--gpu <name>', 'GPU name (e.g. "RTX 4090")')
+  .option('--notes <text>', 'Notes about this model')
+  .action((providerModel, options) => {
+    const parts = providerModel.split('/');
+    if (parts.length < 2) {
+      console.log(chalk.red('\nFormat: cs local-models add <provider>/<model> --cost-per-hour <rate>'));
+      console.log(chalk.gray('Example: cs local-models add ollama/llama3 --cost-per-hour 0.50\n'));
+      return;
+    }
+    const [provider, ...rest] = parts;
+    const model = rest.join('/');
+    const config = addLocalModel({ provider, model, costPerHour: options.costPerHour, gpuName: options.gpu, notes: options.notes });
+    console.log(chalk.green(`\n✓ Registered ${provider}/${model} at $${config.costPerHour.toFixed(2)}/hr${config.gpuName ? ` (${config.gpuName})` : ''}\n`));
+  });
+
+localModelsCmd
+  .command('list')
+  .description('List all registered local models')
+  .option('--json', 'Output JSON')
+  .action(async (options) => {
+    const models = getLocalModels();
+    if (options.json) {
+      console.log(JSON.stringify(models, null, 2));
+      return;
+    }
+    if (models.length === 0) {
+      console.log(chalk.yellow('\nNo local models registered.'));
+      console.log(chalk.gray('Register one: cs local-models add ollama/llama3 --cost-per-hour 0.50'));
+      console.log(chalk.gray('Or auto-detect Ollama: cs local-models detect --cost-per-hour 0.50\n'));
+      return;
+    }
+    console.log(chalk.bold.cyan('\nLocal Models\n'));
+    const Table = require('cli-table3');
+    const table = new Table({ head: [chalk.cyan('Provider'), chalk.cyan('Model'), chalk.cyan('$/hr'), chalk.cyan('GPU'), chalk.cyan('Notes')], style: { head: [], border: [] } });
+    for (const m of models) {
+      table.push([m.provider, m.model, `$${m.costPerHour.toFixed(2)}`, m.gpuName || '-', m.notes || '-']);
+    }
+    console.log(table.toString() + '\n');
+  });
+
+localModelsCmd
+  .command('remove <provider/model>')
+  .description('Remove a local model registration')
+  .action((providerModel) => {
+    const parts = providerModel.split('/');
+    if (parts.length < 2) { console.log(chalk.red('\nFormat: cs local-models remove <provider>/<model>\n')); return; }
+    const [provider, ...rest] = parts;
+    const removed = removeLocalModel(provider, rest.join('/'));
+    if (removed) console.log(chalk.green(`\n✓ Removed ${providerModel}\n`));
+    else console.log(chalk.yellow(`\nModel ${providerModel} not found.\n`));
+  });
+
+localModelsCmd
+  .command('detect')
+  .description('Auto-detect Ollama models running locally')
+  .requiredOption('--cost-per-hour <rate>', 'Cost per hour to assign', parseFloat)
+  .option('--gpu <name>', 'GPU name')
+  .action(async (options) => {
+    console.log(chalk.blue('\n🔍 Scanning for Ollama on localhost:11434...'));
+    const registered = await autoRegisterOllamaModels(options.costPerHour, options.gpu);
+    if (registered.length === 0) {
+      console.log(chalk.yellow('No Ollama models detected. Is Ollama running?\n'));
+    } else {
+      console.log(chalk.green(`✓ Registered ${registered.length} model(s) at $${options.costPerHour.toFixed(2)}/hr:`));
+      for (const name of registered) console.log(chalk.gray(`  • ollama/${name}`));
+      console.log('');
+    }
+  });
+
+// ─── Team Identity (Enterprise) ───────────────────────────────
+
+const teamCmd = program.command('team').description('Set team identity for audit tagging (Enterprise)');
+
+teamCmd
+  .command('set')
+  .description('Set your team identity')
+  .requiredOption('--name <team>', 'Team name')
+  .requiredOption('--member <name>', 'Your name/identifier')
+  .option('--role <role>', 'Your role (e.g. developer, lead)')
+  .option('--department <dept>', 'Department name')
+  .action((options) => {
+    if (!requirePro('Team Identity (Enterprise)')) { process.exit(0); }
+    const { setTeamIdentity } = require('../pro/src/team');
+    const identity = setTeamIdentity({ team: options.name, member: options.member, role: options.role, department: options.department });
+    console.log(chalk.green(`\n✓ Team identity set: ${identity.member} @ ${identity.team}${identity.role ? ` (${identity.role})` : ''}\n`));
+  });
+
+teamCmd
+  .command('show')
+  .description('Show current team identity')
+  .option('--json', 'Output JSON')
+  .action((options) => {
+    const { getTeamIdentity } = require('../pro/src/team');
+    const identity = getTeamIdentity();
+    if (!identity) { console.log(chalk.yellow('\nNo team identity configured. Set one with: cs team set --name <team> --member <name>\n')); return; }
+    if (options.json) { console.log(JSON.stringify(identity, null, 2)); return; }
+    console.log(chalk.bold.cyan('\nTeam Identity\n'));
+    console.log(`  Team:       ${identity.team}`);
+    console.log(`  Member:     ${identity.member}`);
+    if (identity.role) console.log(`  Role:       ${identity.role}`);
+    if (identity.department) console.log(`  Department: ${identity.department}`);
+    console.log(`  Set at:     ${identity.setAt}\n`);
+  });
+
+teamCmd
+  .command('clear')
+  .description('Remove team identity')
+  .action(() => {
+    const { clearTeamIdentity } = require('../pro/src/team');
+    if (clearTeamIdentity()) console.log(chalk.green('\n✓ Team identity cleared.\n'));
+    else console.log(chalk.yellow('\nNo team identity to clear.\n'));
+  });
+
+// ─── Audit Trail (Enterprise) ─────────────────────────────────
+
+const auditCmd = program.command('audit').description('View and export the enterprise audit trail (Enterprise)');
+
+auditCmd
+  .command('log')
+  .description('View recent audit events')
+  .option('-l, --limit <n>', 'Number of events to show', parseInt, 20)
+  .option('--since <date>', 'Show events after this ISO date')
+  .option('--type <eventType>', 'Filter by event type (e.g. session.start, ai.usage)')
+  .option('--json', 'Output JSON')
+  .action((options) => {
+    if (!requirePro('Audit Trail (Enterprise)')) { process.exit(0); }
+    const { getAuditLog } = require('../pro/src/audit');
+    const result = getAuditLog({ limit: options.limit, since: options.since, eventType: options.type });
+    if (options.json) { console.log(JSON.stringify(result, null, 2)); return; }
+    if (result.events.length === 0) { console.log(chalk.yellow('\nNo audit events found.\n')); return; }
+    console.log(chalk.bold.cyan(`\nAudit Log (${result.events.length} of ${result.total})\n`));
+    const Table = require('cli-table3');
+    const table = new Table({
+      head: [chalk.cyan('ID'), chalk.cyan('Time'), chalk.cyan('Event'), chalk.cyan('Actor'), chalk.cyan('Details')],
+      style: { head: [], border: [] },
+      colWidths: [6, 22, 20, 30, 40],
+      wordWrap: true,
+    });
+    for (const e of result.events) {
+      const detailStr = Object.entries(e.details).map(([k, v]) => `${k}: ${v}`).join(', ').slice(0, 80);
+      table.push([e.id, e.timestamp.slice(0, 19).replace('T', ' '), e.eventType, e.actor.slice(0, 28), detailStr]);
+    }
+    console.log(table.toString() + '\n');
+  });
+
+auditCmd
+  .command('export')
+  .description('Export audit trail')
+  .option('-f, --format <format>', 'Export format: json, csv, or soc2', 'json')
+  .option('--since <date>', 'Export events after this ISO date')
+  .action((options) => {
+    if (!requirePro('Audit Trail (Enterprise)')) { process.exit(0); }
+    const { exportAuditLog } = require('../pro/src/audit');
+    const output = exportAuditLog(options.format, { since: options.since });
+    console.log(output);
+  });
+
+auditCmd
+  .command('verify')
+  .description('Verify integrity of the audit chain')
+  .option('--json', 'Output JSON')
+  .action((options) => {
+    if (!requirePro('Audit Trail (Enterprise)')) { process.exit(0); }
+    const { verifyAuditIntegrity } = require('../pro/src/audit');
+    const result = verifyAuditIntegrity();
+    if (options.json) { console.log(JSON.stringify(result, null, 2)); return; }
+    if (result.valid) {
+      console.log(chalk.green(`\n✓ ${result.message}\n`));
+    } else {
+      console.log(chalk.red(`\n✗ ${result.message}\n`));
+    }
+  });
+
 // Only parse CLI args when run directly (not when imported as a library)
 if (require.main === module) {
   program.parse();
@@ -1076,3 +1297,4 @@ export { startWatcher, stopWatcher, cleanupWatcher } from './watcher';
 export { Session, FileChange, Commit, AIUsage, SessionStats, SessionNote } from './types';
 export { AgentSession, AgentSessionConfig, AgentSessionSummary, BudgetExceededError, runAgentSession } from './agents';
 export { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/src/license';
+export { addLocalModel, removeLocalModel, getLocalModels, isLocalModel, calculateLocalCost, parseDuration } from './local-models';

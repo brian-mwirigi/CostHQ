@@ -31,6 +31,11 @@ The `cs` CLI is the main interface to CostHQ. Installing the `costhq` package gl
 | `cs budget [--daily <amount>] [--session <amount>]` | Configure spend alerts |
 
 | `cs auto-log [--provider] [--model] [--agent]` | Auto-log from Claude Code transcript |
+| `cs local-models add <provider>/<model>` | Register a local model and its compute cost |
+| `cs local-models list` | List all registered local models |
+| `cs team set --name <team> --member <name>` | Set team identity for audit logs (Enterprise) |
+| `cs audit log` | View the tamper-evident audit trail (Enterprise) |
+| `cs audit verify` | Verify the cryptographic integrity of the audit log (Enterprise) |
 
 ## Global Flags
 

@@ -31,7 +31,8 @@
             "pages": [
               "tracking/cs-run",
               "tracking/proxy",
-              "tracking/manual"
+              "tracking/manual",
+              "tracking/local-models"
             ]
           },
           {
@@ -54,7 +55,8 @@
             "pages": [
               "configuration/pricing",
               "configuration/data-storage",
-              "configuration/pro-license"
+              "configuration/pro-license",
+              "configuration/enterprise"
             ]
           }
         ]

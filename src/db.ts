@@ -126,6 +126,9 @@ try {
 try {
   db.exec('ALTER TABLE ai_usage ADD COLUMN agent_name TEXT');
 } catch (_) { /* column already exists */ }
+try {
+  db.exec('ALTER TABLE ai_usage ADD COLUMN duration_seconds REAL');
+} catch (_) { /* column already exists */ }
 
 // Migration: add git_root and start_git_head columns if missing
 try {
@@ -185,6 +188,18 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    timestamp TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    actor TEXT NOT NULL,
+    details TEXT NOT NULL,
+    team_id TEXT,
+    checksum TEXT NOT NULL
+  )
+`);
+
 // Create performance indexes for dashboard queries
 db.exec(`
   CREATE INDEX IF NOT EXISTS idx_sessions_status_start ON sessions(status, start_time);
@@ -195,6 +210,8 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ai_usage_session_timestamp ON ai_usage(session_id, timestamp);
   CREATE INDEX IF NOT EXISTS idx_ai_usage_provider_model ON ai_usage(provider, model);
   CREATE INDEX IF NOT EXISTS idx_ai_usage_timestamp ON ai_usage(timestamp);
+  CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON audit_log(timestamp);
+  CREATE INDEX IF NOT EXISTS idx_audit_log_event_type ON audit_log(event_type);
   CREATE INDEX IF NOT EXISTS idx_file_changes_session_id ON file_changes(session_id);
   CREATE INDEX IF NOT EXISTS idx_file_changes_file_path ON file_changes(file_path);
   CREATE INDEX IF NOT EXISTS idx_commits_session_id ON commits(session_id);
@@ -322,10 +339,10 @@ export function addAIUsage(usage: Omit<AIUsage, 'id'>): void {
   // Use transaction for atomic insert + sum update
   const transaction = db.transaction(() => {
     const stmt = db.prepare(`
-      INSERT INTO ai_usage (session_id, provider, model, tokens, prompt_tokens, completion_tokens, cost, agent_name, timestamp)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO ai_usage (session_id, provider, model, tokens, prompt_tokens, completion_tokens, cost, agent_name, duration_seconds, timestamp)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
-    stmt.run(usage.sessionId, usage.provider, usage.model, usage.tokens, usage.promptTokens || null, usage.completionTokens || null, usage.cost, usage.agentName || null, usage.timestamp);
+    stmt.run(usage.sessionId, usage.provider, usage.model, usage.tokens, usage.promptTokens || null, usage.completionTokens || null, usage.cost, usage.agentName || null, usage.durationSeconds || null, usage.timestamp);
 
     // Update session AI totals atomically
     const updateStmt = db.prepare(`
@@ -376,6 +393,7 @@ export function getAIUsage(sessionId: number): AIUsage[] {
     promptTokens: row.prompt_tokens || undefined,
     completionTokens: row.completion_tokens || undefined,
     cost: row.cost,
+    durationSeconds: row.duration_seconds || undefined,
     agentName: row.agent_name || undefined,
     timestamp: row.timestamp,
   }));
@@ -1124,3 +1142,89 @@ export function ensureTrackingSession(dir: string): number {
   });
 }
 
+// ── Audit Log DB Helpers ────────────────────────────────────
+
+export function insertAuditEvent(event: {
+  timestamp: string;
+  eventType: string;
+  actor: string;
+  details: Record<string, any>;
+  teamId?: string;
+  checksum: string;
+}): number {
+  const stmt = db.prepare(`
+    INSERT INTO audit_log (timestamp, event_type, actor, details, team_id, checksum)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `);
+  const result = stmt.run(
+    event.timestamp,
+    event.eventType,
+    event.actor,
+    JSON.stringify(event.details),
+    event.teamId || null,
+    event.checksum
+  );
+  return result.lastInsertRowid as number;
+}
+
+export function getLastAuditEvent(): { checksum: string } | null {
+  const row = db.prepare('SELECT checksum FROM audit_log ORDER BY id DESC LIMIT 1').get() as any;
+  return row ? { checksum: row.checksum } : null;
+}
+
+export function getAllAuditEvents(): Array<{
+  id: number;
+  timestamp: string;
+  eventType: string;
+  actor: string;
+  details: Record<string, any>;
+  teamId?: string;
+  checksum: string;
+}> {
+  const rows = db.prepare('SELECT * FROM audit_log ORDER BY id ASC').all() as any[];
+  return rows.map(r => ({
+    id: r.id,
+    timestamp: r.timestamp,
+    eventType: r.event_type,
+    actor: r.actor,
+    details: JSON.parse(r.details || '{}'),
+    teamId: r.team_id || undefined,
+    checksum: r.checksum,
+  }));
+}
+
+export function queryAuditLog(options: {
+  limit?: number;
+  offset?: number;
+  since?: string;
+  until?: string;
+  eventType?: string;
+  actor?: string;
+}): { events: Array<any>; total: number } {
+  const { limit = 20, offset = 0, since, until, eventType, actor } = options;
+  const conditions: string[] = [];
+  const params: any[] = [];
+
+  if (since) { conditions.push('timestamp >= ?'); params.push(since); }
+  if (until) { conditions.push('timestamp <= ?'); params.push(until); }
+  if (eventType) { conditions.push('event_type = ?'); params.push(eventType); }
+  if (actor) { conditions.push('actor LIKE ?'); params.push(`%${actor}%`); }
+
+  const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+  const countRow = db.prepare(`SELECT COUNT(*) as total FROM audit_log ${where}`).get(...params) as any;
+  const rows = db.prepare(`SELECT * FROM audit_log ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...params, limit, offset) as any[];
+
+  return {
+    events: rows.map(r => ({
+      id: r.id,
+      timestamp: r.timestamp,
+      eventType: r.event_type,
+      actor: r.actor,
+      details: JSON.parse(r.details || '{}'),
+      teamId: r.team_id || undefined,
+      checksum: r.checksum,
+    })),
+    total: countRow.total,
+  };
+}

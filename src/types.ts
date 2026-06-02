@@ -40,6 +40,7 @@ export interface AIUsage {
   promptTokens?: number;
   completionTokens?: number;
   cost: number;
+  durationSeconds?: number;   // compute time for local models
   agentName?: string;
   timestamp: string;
 }

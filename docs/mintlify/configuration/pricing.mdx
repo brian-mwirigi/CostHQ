@@ -115,5 +115,9 @@ cs log-ai -p my-provider -m my-new-model -t 10000 -c 0.12
   }
   ```
 
-  `source` is `"built-in"`, `"custom"`, or `"manual"`. If `modelKnown` is `false`, pass `-c <cost>` explicitly to avoid untracked spend.
+  `source` is `"built-in"`, `"custom"`, `"local"`, or `"manual"`. If `modelKnown` is `false`, pass `-c <cost>` explicitly to avoid untracked spend.
 </Info>
+
+## Local Model Pricing
+
+For local models (Ollama, vLLM, LM Studio) where costs are based on compute time rather than tokens, use `cs local-models add` to set an hourly GPU rate, and log usage with `cs log-ai --duration`. See [Local Models](/tracking/local-models) for details.

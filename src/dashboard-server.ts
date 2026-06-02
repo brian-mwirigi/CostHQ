@@ -429,6 +429,91 @@ export function buildApiRouter(port: number = 3737): Router {
     }
   });
 
+  // ── Local Models API (free) ──────────────────────────────────
+
+  router.get('/local-models', (_req, res) => {
+    try {
+      const { getLocalModels } = require('./local-models');
+      res.json(getLocalModels());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.post('/local-models', (req, res) => {
+    try {
+      const { addLocalModel } = require('./local-models');
+      const { provider, model, costPerHour, gpuName, notes } = req.body;
+      if (!provider || !model || typeof costPerHour !== 'number') {
+        return res.status(400).json({ error: 'provider, model, and costPerHour are required' });
+      }
+      const config = addLocalModel({ provider, model, costPerHour, gpuName, notes });
+      res.json(config);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.delete('/local-models/:provider/:model', (req, res) => {
+    try {
+      const { removeLocalModel } = require('./local-models');
+      const removed = removeLocalModel(req.params.provider, req.params.model);
+      res.json({ removed });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Audit API (enterprise-gated) ─────────────────────────────
+
+  router.get('/audit', (_req, res) => {
+    try {
+      const license = getLicense();
+      if (!license.valid || license.plan !== 'enterprise') {
+        return res.status(403).json({ error: 'Audit trail requires an Enterprise license' });
+      }
+      const { getAuditLog } = require('../pro/src/audit');
+      const limit = parseInt(_req.query.limit as string) || 20;
+      const offset = parseInt(_req.query.offset as string) || 0;
+      const since = _req.query.since as string || undefined;
+      const eventType = _req.query.eventType as string || undefined;
+      res.json(getAuditLog({ limit, offset, since, eventType }));
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/audit/export', (_req, res) => {
+    try {
+      const license = getLicense();
+      if (!license.valid || license.plan !== 'enterprise') {
+        return res.status(403).json({ error: 'Audit export requires an Enterprise license' });
+      }
+      const { exportAuditLog } = require('../pro/src/audit');
+      const format = (_req.query.format as string) || 'json';
+      const data = exportAuditLog(format, { since: _req.query.since as string });
+      const mime = format === 'csv' ? 'text/csv' : 'application/json';
+      res.setHeader('Content-Type', mime);
+      res.setHeader('Content-Disposition', `attachment; filename="CostHQ-audit.${format === 'csv' ? 'csv' : 'json'}"`);
+      res.send(data);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.get('/audit/verify', (_req, res) => {
+    try {
+      const license = getLicense();
+      if (!license.valid || license.plan !== 'enterprise') {
+        return res.status(403).json({ error: 'Audit verification requires an Enterprise license' });
+      }
+      const { verifyAuditIntegrity } = require('../pro/src/audit');
+      res.json(verifyAuditIntegrity());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   router.get('/export', (req, res) => {
     try {
       const format = (req.query.format as string) === 'csv' ? 'csv' : 'json';
