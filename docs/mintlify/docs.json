@@ -23,7 +23,8 @@
             "pages": [
               "introduction",
               "installation",
-              "quickstart"
+              "quickstart",
+              "troubleshooting"
             ]
           },
           {

@@ -1,0 +1,88 @@
+---
+title: "Troubleshooting & Common Issues"
+sidebarTitle: "Troubleshooting"
+description: "Solutions to common errors, proxy issues, and missing costs when using CostHQ."
+---
+
+If you run into issues while using CostHQ, check the common scenarios below. If your problem isn't listed, feel free to open an issue on the [GitHub repository](https://github.com/brian-mwirigi/CostHQ).
+
+## Session Management Issues
+
+### Error: `SESSION_ACTIVE`
+
+```text
+Error: An active session already exists for this directory.
+```
+
+**Why it happens:** You tried to run `cs start` or `cs run` in a Git repository (or directory) that already has an active session running.
+
+**How to fix it:**
+- If the session is legitimately still running and you want to resume it, use `cs start --resume`.
+- If an agent crashed and left the session "orphaned" (stale), use `cs start --close-stale` to automatically end the old one and start a new one.
+- To just close the active session without starting a new one, run `cs end`.
+
+### Error: `NO_ACTIVE_SESSION`
+
+```text
+Error: No active session found. Run cs start first.
+```
+
+**Why it happens:** You tried to run `cs log-ai`, `cs note`, or `cs end`, but CostHQ couldn't find an active session scoped to your current directory or Git root.
+
+**How to fix it:** 
+Start a session first with `cs start "Task Name"`. If you are trying to log to a specific session that isn't the active one for your current directory, pass the session ID explicitly: `cs log-ai ... -s <id>`.
+
+## Cost and Pricing Issues
+
+### Costs are showing as $0.00
+
+**Why it happens:** You logged AI usage for an unknown model, and CostHQ didn't know how much to charge for it.
+
+**How to fix it:**
+1. Check if the model is in the built-in pricing table: `cs pricing list`.
+2. If it is a cloud API model, set a custom price for it: `cs pricing set <model> <input-price> <output-price>`. Future calls will calculate automatically.
+3. If it is a **local model** running on your GPU (e.g. Ollama, vLLM), register its hourly compute rate: `cs local-models add <provider>/<model> --cost-per-hour <rate>` and log its usage using the `--duration` flag.
+4. Or, pass the exact cost manually when logging: `cs log-ai -p custom -m custom -t 1000 -c 0.05`.
+
+### CostHQ Proxy isn't capturing traffic
+
+**Why it happens:** The CostHQ proxy is running, but your agent or script isn't routing its API calls through the proxy port.
+
+**How to fix it:**
+CostHQ proxy runs on `http://127.0.0.1:3739` by default. You need to tell your tools to use it:
+- Set standard environment variables: `export HTTP_PROXY=http://127.0.0.1:3739` and `export HTTPS_PROXY=http://127.0.0.1:3739`.
+- If using Node.js, ensure `GLOBAL_AGENT_HTTP_PROXY` is set, or configure your specific SDK (like `openai` or `anthropic`) to use a custom `baseURL`.
+
+## Dashboard and Server Issues
+
+### Error: `EADDRINUSE: address already in use`
+
+```text
+Error: listen EADDRINUSE: address already in use :::3739
+```
+
+**Why it happens:** CostHQ tried to start the proxy or the dashboard server, but the port is already taken by another application (or an orphaned CostHQ process).
+
+**How to fix it:**
+- Start CostHQ on a different port: `cs dashboard --port 4000` or `cs proxy --port 3740`.
+- Or, find and kill the process using the default port (3739 for proxy, 3738 for dashboard). On macOS/Linux: `lsof -i :3739` then `kill -9 <PID>`.
+
+## File Tracking Issues
+
+### CostHQ isn't detecting my file changes
+
+**Why it happens:** The background file watcher might not be running, or your files are ignored.
+
+**How to fix it:**
+- Ensure you started the session with `cs start` or `cs run`. The watcher starts automatically in the background.
+- CostHQ respects `.gitignore`. If a file is git-ignored, CostHQ won't track changes to it.
+- To check watcher status, run `cs status` — it should indicate if the background watcher is active.
+
+## Enterprise / Pro License Issues
+
+### Error: `Audit trail requires an Enterprise license`
+
+**Why it happens:** You tried to run a `cs audit` command or access an enterprise endpoint without an active Enterprise-tier license.
+
+**How to fix it:**
+Add your license key using `cs dashboard` (Settings page) or via the environment. Ensure your license plan is `enterprise` and not `pro`. You can verify your license status in the dashboard.
