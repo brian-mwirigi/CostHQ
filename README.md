@@ -761,3 +761,7 @@ Built by [Brian Mwirigi](https://github.com/brian-mwirigi)
     <a href="https://github.com/brian-mwirigi/codesession-cli"><img src="https://img.shields.io/github/stars/brian-mwirigi/codesession-cli?style=social" alt="GitHub stars"></a>
   </p>
 </div>
+
+## Download History
+
+[![Download History](https://skill-history.com/chart/brian-mwirigi/costhq.svg)](https://skill-history.com/brian-mwirigi/costhq)
