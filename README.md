@@ -28,7 +28,7 @@
   <p>Developed by <a href="https://brianmunene.me">Brian Munene Mwirigi</a></p>
 
   <br />
-  <a href="https://skill-history.com/brian-mwirigi/costhq"><img src="https://skill-history.com/chart/brian-mwirigi/CostHQ.svg" alt="Download history"></a>
+  [![Download history](https://skill-history.com/chart/brian-mwirigi/costhq.svg)](https://skill-history.com/brian-mwirigi/costhq)
 </div>
 
 ---
