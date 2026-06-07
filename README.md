@@ -5,30 +5,30 @@
   <p>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/v/costhq?color=brightgreen" alt="npm version"></a>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/dy/costhq?color=blue" alt="npm downloads"></a>
-    <a href="https://skill-history.com/brian-mwirigi/costhq"><img src="https://skill-history.com/badge/brian-mwirigi/costhq.svg" alt="Downloads"></a>
-    <a href="https://clawhub.ai/brian-mwirigi/costhq"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
-    <a href="https://github.com/brian-mwirigi/costhq"><img src="https://img.shields.io/github/stars/brian-mwirigi/costhq?style=social" alt="GitHub stars"></a>
-    <a href="https://github.com/brian-mwirigi/costhq/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/costhq" alt="license"></a>
+    <a href="https://skill-history.com/brian-mwirigi/CostHQ"><img src="https://skill-history.com/badge/brian-mwirigi/CostHQ.svg" alt="Downloads"></a>
+    <a href="https://clawhub.ai/brian-mwirigi/CostHQ"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
+    <a href="https://github.com/brian-mwirigi/CostHQ"><img src="https://img.shields.io/github/stars/brian-mwirigi/CostHQ?style=social" alt="GitHub stars"></a>
+    <a href="https://github.com/brian-mwirigi/CostHQ/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/costhq" alt="license"></a>
   </p>
 
   <p><em>Track agent runs • Monitor files • Log commits • Enforce budgets</em></p>
 
-  <p>If this tool saves you money, consider <a href="https://github.com/sponsors/brian-mwirigi">sponsoring</a> or <a href="https://github.com/brian-mwirigi/codesession-cli">giving it a star</a></p>
+  <p>If this tool saves you money, consider <a href="https://github.com/sponsors/brian-mwirigi">sponsoring</a> or <a href="https://github.com/brian-mwirigi/CostHQ">giving it a star</a></p>
 
   <p>
     <a href="https://github.com/sponsors/brian-mwirigi"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github" alt="Sponsor"></a>
     <a href="https://buymeacoffee.com/brianmwirigi"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%E2%98%95-yellow?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
     <a href="https://www.npmjs.com/package/costhq"> npm</a> •
-    <a href="https://github.com/brian-mwirigi/costhq"> GitHub</a> •
+    <a href="https://github.com/brian-mwirigi/CostHQ"> GitHub</a> •
     <a href="https://costhq.mintlify.app/"> Documentation</a> •
-    <a href="https://github.com/brian-mwirigi/costhq/blob/main/CHANGELOG.md"> Changelog</a> •
+    <a href="https://github.com/brian-mwirigi/CostHQ/blob/main/CHANGELOG.md"> Changelog</a> •
     <a href="#openclaw-skill"> OpenClaw Skill</a>
   </p>
 
   <p>Developed by <a href="https://brianmunene.me">Brian Munene Mwirigi</a></p>
 
   <br />
-  <a href="https://skill-history.com/brian-mwirigi/costhq"><img src="https://skill-history.com/chart/brian-mwirigi/costhq.svg" alt="Download history"></a>
+  <a href="https://skill-history.com/brian-mwirigi/CostHQ"><img src="https://skill-history.com/chart/brian-mwirigi/CostHQ.svg" alt="Download history"></a>
 </div>
 
 ---
@@ -48,7 +48,7 @@
 ## Dashboard Preview
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/brian-mwirigi/codesession-cli/main/docs/screenshots/dashboard-overview.png" alt="Dashboard Overview" width="800">
+  <img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/dashboard-overview.png" alt="Dashboard Overview" width="800">
   <p><em>Real-time cost tracking, session analytics, and model breakdown</em></p>
 </div>
 
@@ -56,13 +56,13 @@
 <summary>View More Screenshots</summary>
 
 ### Session Detail View
-<img src="https://raw.githubusercontent.com/brian-mwirigi/codesession-cli/main/docs/screenshots/session-detail.png" alt="Session Detail" width="800">
+<img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/session-detail.png" alt="Session Detail" width="800">
 
 ### AI Usage with Agent Tracking
-<img src="https://raw.githubusercontent.com/brian-mwirigi/codesession-cli/main/docs/screenshots/agent-tracking.png" alt="Agent Tracking" width="800">
+<img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/agent-tracking.png" alt="Agent Tracking" width="800">
 
 ### Cost Charts & Analytics
-<img src="https://raw.githubusercontent.com/brian-mwirigi/codesession-cli/main/docs/screenshots/cost-charts.png" alt="Cost Charts" width="800">
+<img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/cost-charts.png" alt="Cost Charts" width="800">
 
 </details>
 
@@ -102,7 +102,7 @@ cs end
 
 ### Prerequisites
 
-codesession-cli uses an embedded SQLite database ([better-sqlite3](https://github.com/WiseLibs/better-sqlite3)) which requires C/C++ build tools to compile:
+costhq uses an embedded SQLite database ([better-sqlite3](https://github.com/WiseLibs/better-sqlite3)) which requires C/C++ build tools to compile:
 
 | OS | Install build tools |
 |---|---|
@@ -116,19 +116,19 @@ codesession-cli uses an embedded SQLite database ([better-sqlite3](https://githu
 ### Install
 
 ```bash
-npm install -g codesession-cli
+npm install -g costhq
 ```
 
 ## Quick Start: Node.js Library (New!)
 
-With the merge of `aitoken-cli`, you can now use codesession as a drop-in Node.js library to track API spend in your own backend applications. Costs are automatically calculated and sent to your dashboard!
+With the merge of `aitoken-cli`, you can now use CostHQ as a drop-in Node.js library to track API spend in your own backend applications. Costs are automatically calculated and sent to your dashboard!
 
 ### 1. Drop-in SDK Extensions
 
 Simply replace `new OpenAI()` with `new TrackedOpenAI()`:
 
 ```typescript
-import { TrackedOpenAI, TrackedAnthropic } from 'codesession-cli/extensions';
+import { TrackedOpenAI, TrackedAnthropic } from 'costhq/extensions';
 
 // Works exactly like the official OpenAI SDK, but logs tokens and costs automatically!
 const openai = new TrackedOpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -143,7 +143,7 @@ const response = await openai.chat.completions.create({
 If you already have a configured client, just wrap your calls:
 
 ```typescript
-import { trackedGPT } from 'codesession-cli/wrappers';
+import { trackedGPT } from 'costhq/wrappers';
 
 const response = await trackedGPT(openaiClient, { 
   model: 'gpt-4o', 
@@ -298,7 +298,7 @@ Options:
 
 **Security:** The dashboard binds to `127.0.0.1` only by default and exposes only your local session data. It does not send telemetry, phone home, or open any external connections. When bound to a non-localhost address (`--host 0.0.0.0`), a random session token is generated and required for all API requests.
 
-**Port safety:** The dashboard writes a PID file (`~/.codesession/dashboard-<port>.pid`). On restart it only kills a stale process if the PID file matches -- it never blindly kills whatever is on the port.
+**Port safety:** The dashboard writes a PID file (`~/.costhq/dashboard-<port>.pid`). On restart it only kills a stale process if the PID file matches -- it never blindly kills whatever is on the port.
 
 **API versioning:** All endpoints are available at `/api/v1/*` (canonical) and `/api/*` (backward-compatible alias). Responses include an `X-Codesession-Api-Version: 1` header.
 
@@ -306,11 +306,11 @@ Options:
 
 ## OpenClaw Skill
 
-codesession-cli ships as an [OpenClaw](https://openclaw.ai) skill. The skill is at [Codesession](https://clawhub.ai/brian-mwirigi/codesession) Three commands to get started:
+costhq ships as an [OpenClaw](https://openclaw.ai) skill. The skill is at [Codesession](https://clawhub.ai/brian-mwirigi/costhq) Three commands to get started:
 
 ```bash
-npm install -g codesession-cli   # 1. Install the CLI
-clawhub install codesession      # 2. Install the skill
+npm install -g costhq   # 1. Install the CLI
+clawhub install CostHQ      # 2. Install the skill
 # 3. Start a new OpenClaw session — the agent picks it up automatically
 ```
 
@@ -320,7 +320,7 @@ clawhub install codesession      # 2. Install the skill
 <summary>Manual install (without ClawHub)</summary>
 
 ```bash
-cp -r $(npm root -g)/codesession-cli/skills/codesession ~/.openclaw/skills/
+cp -r $(npm root -g)/costhq/skills/CostHQ ~/.openclaw/skills/
 ```
 </details>
 
@@ -333,7 +333,7 @@ Once installed, the OpenClaw agent will:
 3. Check costs with `cs status --json` during long tasks
 4. Run `cs end` when the task completes
 
-### Example: Agent run tracked by codesession
+### Example: Agent run tracked by costhq
 
 ```
 You: Fix the payment processing bug and add retry logic
@@ -370,10 +370,10 @@ $ cs stats
 
 ## Programmatic API (for agent frameworks)
 
-Build codesession tracking directly into your agent:
+Build CostHQ tracking directly into your agent:
 
 ```typescript
-import { AgentSession, BudgetExceededError } from 'codesession-cli/agents';
+import { AgentSession, BudgetExceededError } from 'costhq/agents';
 
 const session = new AgentSession('Refactor auth module', {
   budget: 5.00,        // Hard cap: stop at $5
@@ -412,7 +412,7 @@ const summary = session.end();
 Wraps start/end/error handling automatically:
 
 ```typescript
-import { runAgentSession } from 'codesession-cli/agents';
+import { runAgentSession } from 'costhq/agents';
 
 const summary = await runAgentSession(
   'Fix all linting errors',
@@ -509,11 +509,11 @@ Annotations appear in `cs show --json` under the `annotations` array.
 
 ## Data Storage
 
-All data stored locally in `~/.codesession/sessions.db` (SQLite with WAL mode for concurrent access).
+All data stored locally in `~/.costhq/sessions.db` (SQLite with WAL mode for concurrent access).
 
 No telemetry. No cloud. 100% local.
 
-> **Migration from v1.3.x:** Data is auto-migrated from `~/.devsession/` to `~/.codesession/` on first run. The migration **copies** files — it does **not** delete the old directory. If both directories exist, `~/.codesession/` wins (the old one is ignored). After confirming everything works, you can safely delete `~/.devsession/` manually. The migration message is printed to stderr so it doesn't break `--json` stdout.
+> **Migration from v3.1.x:** Data is auto-migrated from `~/.codesession/` to `~/.costhq/` on first run. The migration **copies** files — it does **not** delete the old directory. If both directories exist, `~/.costhq/` wins (the old one is ignored). After confirming everything works, you can safely delete `~/.codesession/` manually. The migration message is printed to stderr so it doesn't break `--json` stdout.
 
 ## How tracking works
 
@@ -521,9 +521,9 @@ No telemetry. No cloud. 100% local.
 
 **Commits** — Detected by polling `git log` every 10 seconds (via [simple-git](https://github.com/steveukx/git-js)). Picks up the latest commit hash in the current repository. Only tracks commits made during the session.
 
-**AI usage** — Explicitly logged via `cs log-ai` (CLI) or `session.logAI()` (API). No API call interception — you report what you used, and codesession records it.
+**AI usage** — Explicitly logged via `cs log-ai` (CLI) or `session.logAI()` (API). No API call interception — you report what you used, and CostHQ records it.
 
-> **Note:** In `--json` mode (typical for agents), the file watcher and commit poller are *not* started — agents call `cs log-ai` and `cs end` as discrete commands. However, on `cs end`, if `startGitHead` was captured at session start, codesession runs `git diff --name-status <startHead>..HEAD` and `git log <startHead>..HEAD` to backfill accurate file and commit counts — even in agent mode.
+> **Note:** In `--json` mode (typical for agents), the file watcher and commit poller are *not* started — agents call `cs log-ai` and `cs end` as discrete commands. However, on `cs end`, if `startGitHead` was captured at session start, CostHQ runs `git diff --name-status <startHead>..HEAD` and `git log <startHead>..HEAD` to backfill accurate file and commit counts — even in agent mode.
 
 ## Session scoping: git root
 
@@ -535,7 +535,7 @@ If you're not in a git repo, the exact cwd is used as-is.
 
 ## Configurable pricing
 
-codesession ships with built-in pricing for 17 models. Override or add models:
+CostHQ ships with built-in pricing for 17 models. Override or add models:
 
 ```bash
 # See current pricing
@@ -548,7 +548,7 @@ cs pricing set my-ft-model 5.00 15.00
 cs pricing reset
 ```
 
-Custom pricing is stored in `~/.codesession/pricing.json` and merged with built-in defaults.
+Custom pricing is stored in `~/.costhq/pricing.json` and merged with built-in defaults.
 
 Model names can collide across providers. Use `--provider` to namespace:
 
@@ -620,7 +620,7 @@ Session: Build user auth
 }
 ```
 
-> All `--json` responses include `schemaVersion` (currently `1`) and `codesessionVersion` (e.g. `"2.0.0"`) at the top level.
+> All `--json` responses include `schemaVersion` (currently `1`) and `costhqVersion` (e.g. `"2.0.0"`) at the top level.
 
 ## License
 
@@ -637,7 +637,7 @@ All `--json` outputs include metadata fields for forward compatibility:
 ```json
 {
   "schemaVersion": 1,
-  "codesessionVersion": "2.0.0",
+  "costhqVersion": "2.0.0",
   ...
 }
 ```
@@ -660,7 +660,7 @@ JSON errors always follow this shape:
 ```json
 {
   "schemaVersion": 1,
-  "codesessionVersion": "2.0.0",
+  "costhqVersion": "2.0.0",
   "error": {
     "code": "no_active_session",
     "message": "No active session"
@@ -684,7 +684,7 @@ Always returns these fields when a session is active:
 ```json
 {
   "schemaVersion": 1,
-  "codesessionVersion": "1.7.0",
+  "costhqVersion": "1.7.0",
   "id": 42,
   "name": "...",
   "status": "active",
@@ -739,10 +739,10 @@ Built by [Brian Mwirigi](https://github.com/brian-mwirigi)
 
 <div align="center">
   <p><strong>Know what your agents cost. Ship with confidence.</strong></p>
-  <p>If codesession-cli saves you money, consider <a href="https://github.com/sponsors/brian-mwirigi">sponsoring</a>, <a href="https://buymeacoffee.com/brianmwirigi">buying me a coffee</a>, or giving it a <a href="https://github.com/brian-mwirigi/codesession-cli">star</a></p>
+  <p>If costhq saves you money, consider <a href="https://github.com/sponsors/brian-mwirigi">sponsoring</a>, <a href="https://buymeacoffee.com/brianmwirigi">buying me a coffee</a>, or giving it a <a href="https://github.com/brian-mwirigi/CostHQ">star</a></p>
   <p>
     <a href="https://github.com/sponsors/brian-mwirigi"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github" alt="Sponsor"></a>
     <a href="https://buymeacoffee.com/brianmwirigi"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-%E2%98%95-yellow?logo=buymeacoffee&logoColor=black" alt="Buy Me a Coffee"></a>
-    <a href="https://github.com/brian-mwirigi/codesession-cli"><img src="https://img.shields.io/github/stars/brian-mwirigi/codesession-cli?style=social" alt="GitHub stars"></a>
+    <a href="https://github.com/brian-mwirigi/CostHQ"><img src="https://img.shields.io/github/stars/brian-mwirigi/CostHQ?style=social" alt="GitHub stars"></a>
   </p>
 </div>
