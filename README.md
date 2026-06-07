@@ -5,7 +5,7 @@
   <p>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/v/costhq?color=brightgreen" alt="npm version"></a>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/dy/costhq?color=blue" alt="npm downloads"></a>
-    <a href="https://skill-history.com/brian-mwirigi/CostHQ"><img src="https://skill-history.com/badge/brian-mwirigi/CostHQ.svg" alt="Downloads"></a>
+    <a href="https://skill-history.com/brian-mwirigi/CostHQ"><img src="https://skill-history.com/badge/brian-mwirigi/costhq.svg" alt="Downloads"></a>
     <a href="https://clawhub.ai/brian-mwirigi/CostHQ"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
     <a href="https://github.com/brian-mwirigi/CostHQ"><img src="https://img.shields.io/github/stars/brian-mwirigi/CostHQ?style=social" alt="GitHub stars"></a>
     <a href="https://github.com/brian-mwirigi/CostHQ/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/costhq" alt="license"></a>
