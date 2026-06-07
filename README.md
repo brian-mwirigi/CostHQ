@@ -5,7 +5,7 @@
   <p>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/v/costhq?color=brightgreen" alt="npm version"></a>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/dy/costhq?color=blue" alt="npm downloads"></a>
-    <a href="https://www.npmjs.com/package/codesession-cli"><img src="https://img.shields.io/npm/dt/codesession-cli?label=legacy%20downloads&color=grey" alt="legacy npm downloads"></a>
+    <a href="https://skill-history.com/brian-mwirigi/costhq"><img src="https://skill-history.com/badge/brian-mwirigi/costhq.svg" alt="Downloads"></a>
     <a href="https://clawhub.ai/brian-mwirigi/costhq"><img src="https://img.shields.io/badge/OpenClaw-Skill-blue" alt="OpenClaw Skill"></a>
     <a href="https://github.com/brian-mwirigi/costhq"><img src="https://img.shields.io/github/stars/brian-mwirigi/costhq?style=social" alt="GitHub stars"></a>
     <a href="https://github.com/brian-mwirigi/costhq/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/costhq" alt="license"></a>
@@ -26,37 +26,22 @@
   </p>
 
   <p>Developed by <a href="https://brianmunene.me">Brian Munene Mwirigi</a></p>
+
+  <br />
+  <a href="https://skill-history.com/brian-mwirigi/costhq"><img src="https://skill-history.com/chart/brian-mwirigi/costhq.svg" alt="Download history"></a>
 </div>
 
 ---
 
-## What's New in v3.0.0 (The Pro Unlock)
+## What's New in v3.2.0
 
-- **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI! Watchers run automatically in the background. (Pro feature)
-- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats. (Pro feature)
+- **CostHQ Rebrand & Redesign** — Complete Emerald Glassmorphism visual overhaul and brand evolution from Devsession to CostHQ.
+- **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI!
+- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
 - **In-App Feedback** — Built-in feedback modal allowing you to report bugs or request features directly from the dashboard.
-- **Onboarding Wizard** — First-time user overlay walkthrough for CLI commands and dashboard capabilities.
-- **Massive Performance Boosts** — SQLite performance indexes added, `simple-git` instances are now cached, and `puppeteer` was removed from production dependencies making installs significantly faster.
+- **Massive Performance Boosts** — SQLite performance indexes added, `simple-git` instances are now cached, and `puppeteer` was removed making installs significantly faster.
 
-## What's New in v2.1.0 (The API Tracking Pivot)
-
-We merged the most loved features of `aitoken-cli` directly into codesession! You can now use codesession as a **drop-in Node.js library** to automatically track AI costs in your backend apps, completely headless.
-
-- **Drop-in SDKs** — Just `import { TrackedOpenAI } from 'codesession-cli/extensions'`
-- **Background Sessions** — API calls made via the library auto-create headless tracking sessions so you never lose a cent of data.
-- **Extended Model Pricing** — 42+ built-in models including DeepSeek, o1, o3, Azure, and Cohere.
-- **Middleware Hooks** — `createTrackedClient()` and `BatchTracker` for advanced Node.js architectures.
-
----
-
-## What's New in v2.0.0
-
-- **Alerts Dashboard** — Set daily, total, and per-session cost limits with progress bars, alarm mode (sound + browser notifications), and status badges
-- **Start Fresh** — Reset all session data from the dashboard with a confirmation modal
-- **Insights Page** — File hotspots, activity heatmap, project breakdown, pricing table
-- **Bug Fixes** — Fixed alarm autoplay policy, null ref crash, active session cleanup on reset
-
-[Full Changelog →](https://github.com/brian-mwirigi/codesession-cli/blob/main/CHANGELOG.md)
+[Full Changelog →](https://github.com/brian-mwirigi/CostHQ/blob/main/CHANGELOG.md)
 
 ---
 

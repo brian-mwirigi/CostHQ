@@ -90,33 +90,7 @@ export default function Feedback() {
               </p>
             </div>
           ) : (
-            <form onSubmit={async (e) => {
-              e.preventDefault();
-              if (!message.trim()) return;
-
-              // 1. Silently save history locally
-              const token = document.querySelector('meta[name="cs-token"]')?.getAttribute('content') || (window as any).__CS_TOKEN || null;
-              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-              if (token) headers['Authorization'] = `Bearer ${token}`;
-              await fetch('/api/v1/feedback', {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ type: feedbackType, message, email: email || undefined }),
-              }).catch(() => {});
-
-              // 2. Open email client via mailto:
-              const subject = encodeURIComponent(`CostHQ Feedback: ${feedbackType}`);
-              let bodyText = `Type: ${feedbackType}\n`;
-              if (email) bodyText += `From: ${email}\n`;
-              bodyText += `\nMessage:\n${message}\n`;
-              const body = encodeURIComponent(bodyText);
-              
-              window.location.href = `mailto:brianinesh@gmail.com?subject=${subject}&body=${body}`;
-              
-              setMessage('');
-              setSuccess(true);
-              loadHistory();
-            }} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               
               <div>
                 <label style={{ display: 'block', fontSize: 13, color: 'var(--text-secondary)', marginBottom: 6 }}>
@@ -166,27 +140,113 @@ export default function Feedback() {
                 <p style={{ margin: 0, fontSize: 13, color: '#f85149' }}>{error}</p>
               )}
 
-              <button
-                type="submit"
-                disabled={!message.trim()}
-                style={{
-                  alignSelf: 'flex-start',
-                  padding: '8px 20px',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 'var(--radius)',
-                  fontFamily: 'var(--font-sans)',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  cursor: !message.trim() ? 'not-allowed' : 'pointer',
-                  opacity: !message.trim() ? 0.5 : 1,
-                  transition: 'opacity 0.15s',
-                }}
-              >
-                Submit via Email Client
-              </button>
-            </form>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '8px' }}>
+                <button
+                  type="button"
+                  disabled={!message.trim()}
+                  onClick={async () => {
+                    if (!message.trim()) return;
+                    
+                    // 1. Silently save history locally
+                    const token = document.querySelector('meta[name="cs-token"]')?.getAttribute('content') || (window as any).__CS_TOKEN || null;
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    await fetch('/api/v1/feedback', {
+                      method: 'POST',
+                      headers,
+                      body: JSON.stringify({ type: feedbackType, message, email: email || undefined }),
+                    }).catch(() => {});
+
+                    const subject = encodeURIComponent(`CostHQ Feedback: ${feedbackType}`);
+                    let bodyText = `Type: ${feedbackType}\n`;
+                    if (email) bodyText += `From: ${email}\n`;
+                    bodyText += `\nMessage:\n${message}\n`;
+                    const body = encodeURIComponent(bodyText);
+                    
+                    window.location.href = `mailto:brianinesh@gmail.com?subject=${subject}&body=${body}`;
+                    
+                    setMessage('');
+                    setSuccess(true);
+                    loadHistory();
+                  }}
+                  className="modal-btn modal-btn--primary"
+                  style={{ flex: '1 1 auto' }}
+                >
+                  Submit via Default Mail
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!message.trim()}
+                  onClick={async () => {
+                    if (!message.trim()) return;
+                    
+                    const token = document.querySelector('meta[name="cs-token"]')?.getAttribute('content') || (window as any).__CS_TOKEN || null;
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    await fetch('/api/v1/feedback', {
+                      method: 'POST',
+                      headers,
+                      body: JSON.stringify({ type: feedbackType, message, email: email || undefined }),
+                    }).catch(() => {});
+
+                    const subject = encodeURIComponent(`CostHQ Feedback: ${feedbackType}`);
+                    let bodyText = `Type: ${feedbackType}\n`;
+                    if (email) bodyText += `From: ${email}\n`;
+                    bodyText += `\nMessage:\n${message}\n`;
+                    const body = encodeURIComponent(bodyText);
+                    
+                    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=brianinesh@gmail.com&su=${subject}&body=${body}`, '_blank');
+                    
+                    setMessage('');
+                    setSuccess(true);
+                    loadHistory();
+                  }}
+                  className="modal-btn"
+                  style={{ flex: '1 1 auto', background: '#DB4437', color: 'white', borderColor: '#DB4437' }}
+                >
+                  Submit via Gmail
+                </button>
+
+                <button
+                  type="button"
+                  disabled={!message.trim()}
+                  onClick={async () => {
+                    if (!message.trim()) return;
+                    
+                    const token = document.querySelector('meta[name="cs-token"]')?.getAttribute('content') || (window as any).__CS_TOKEN || null;
+                    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                    if (token) headers['Authorization'] = `Bearer ${token}`;
+                    await fetch('/api/v1/feedback', {
+                      method: 'POST',
+                      headers,
+                      body: JSON.stringify({ type: feedbackType, message, email: email || undefined }),
+                    }).catch(() => {});
+
+                    let bodyText = `**Type:** ${feedbackType}\n`;
+                    if (email) bodyText += `**From:** ${email}\n`;
+                    bodyText += `\n**Message:**\n${message}\n`;
+                    
+                    try {
+                      await navigator.clipboard.writeText(bodyText);
+                      alert('Feedback copied to clipboard! Opening Discord...');
+                      window.open('https://discord.com/app', '_blank');
+                    } catch {
+                      alert('Could not copy to clipboard. Please join our Discord and paste your feedback.');
+                      window.open('https://discord.com/app', '_blank');
+                    }
+                    
+                    setMessage('');
+                    setSuccess(true);
+                    loadHistory();
+                  }}
+                  className="modal-btn"
+                  style={{ flex: '1 1 auto', background: '#5865F2', color: 'white', borderColor: '#5865F2' }}
+                >
+                  Submit via Discord
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -147,9 +147,10 @@ export function buildApiRouter(port: number = 3737): Router {
     res.status(403).json({ error: 'CSRF' });
   });
 
-  router.get('/stats', (_req, res) => {
+  router.get('/stats', (req, res) => {
     try {
-      const stats = getStats();
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
+      const stats = getStats(days);
       const active = getActiveSessions();
       res.json({ ...stats, activeSessions: active.length });
     } catch (e: any) {
@@ -330,16 +331,17 @@ export function buildApiRouter(port: number = 3737): Router {
 
   router.get('/daily-costs', (req, res) => {
     try {
-      const days = parseInt(req.query.days as string) || 30;
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
       res.json(getDailyCosts(days));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
   });
 
-  router.get('/model-breakdown', (_req, res) => {
+  router.get('/model-breakdown', (req, res) => {
     try {
-      res.json(getModelBreakdown());
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
+      res.json(getModelBreakdown(days));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -348,7 +350,8 @@ export function buildApiRouter(port: number = 3737): Router {
   router.get('/top-sessions', (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 10;
-      res.json(getTopSessions(limit));
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
+      res.json(getTopSessions(limit, days));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -381,7 +384,7 @@ export function buildApiRouter(port: number = 3737): Router {
 
   router.get('/daily-tokens', (req, res) => {
     try {
-      const days = parseInt(req.query.days as string) || 30;
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
       res.json(getDailyTokens(days));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
@@ -391,7 +394,8 @@ export function buildApiRouter(port: number = 3737): Router {
   router.get('/cost-velocity', (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
-      res.json(getCostVelocity(limit));
+      const days = req.query.days ? parseInt(req.query.days as string) : undefined;
+      res.json(getCostVelocity(limit, days));
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
@@ -464,13 +468,13 @@ export function buildApiRouter(port: number = 3737): Router {
     }
   });
 
-  // ── Audit API (enterprise-gated) ─────────────────────────────
+  // ── Audit API ─────────────────────────────
 
   router.get('/audit', (_req, res) => {
     try {
       const license = getLicense();
-      if (!license.valid || license.plan !== 'enterprise') {
-        return res.status(403).json({ error: 'Audit trail requires an Enterprise license' });
+      if (!license.valid) {
+        return res.status(403).json({ error: 'Audit trail requires a Pro license' });
       }
       const { getAuditLog } = require('../pro/src/audit');
       const limit = parseInt(_req.query.limit as string) || 20;
@@ -486,8 +490,8 @@ export function buildApiRouter(port: number = 3737): Router {
   router.get('/audit/export', (_req, res) => {
     try {
       const license = getLicense();
-      if (!license.valid || license.plan !== 'enterprise') {
-        return res.status(403).json({ error: 'Audit export requires an Enterprise license' });
+      if (!license.valid) {
+        return res.status(403).json({ error: 'Audit export requires a Pro license' });
       }
       const { exportAuditLog } = require('../pro/src/audit');
       const format = (_req.query.format as string) || 'json';
@@ -504,8 +508,8 @@ export function buildApiRouter(port: number = 3737): Router {
   router.get('/audit/verify', (_req, res) => {
     try {
       const license = getLicense();
-      if (!license.valid || license.plan !== 'enterprise') {
-        return res.status(403).json({ error: 'Audit verification requires an Enterprise license' });
+      if (!license.valid) {
+        return res.status(403).json({ error: 'Audit verification requires a Pro license' });
       }
       const { verifyAuditIntegrity } = require('../pro/src/audit');
       res.json(verifyAuditIntegrity());
@@ -526,8 +530,8 @@ export function buildApiRouter(port: number = 3737): Router {
   router.post('/team', (req, res) => {
     try {
       const license = getLicense();
-      if (!license.valid || license.plan !== 'enterprise') {
-        return res.status(403).json({ error: 'Team identity requires an Enterprise license' });
+      if (!license.valid) {
+        return res.status(403).json({ error: 'Team identity requires a Pro license' });
       }
       const { setTeamIdentity, clearTeamIdentity } = require('../pro/src/team');
       
@@ -846,6 +850,14 @@ export function startDashboard(options: DashboardOptions = {}): void {
   app.get('/models', sendSpa);
   app.get('/insights', sendSpa);
   app.get('/alerts', sendSpa);
+  app.get('/audit', sendSpa);
+  app.get('/pro', sendSpa);
+  app.get('/local-models', sendSpa);
+  app.get('/upgrade', sendSpa);
+  app.get('/donate', sendSpa);
+  app.get('/feedback', sendSpa);
+  app.get('/share', sendSpa);
+  app.get('/console', sendSpa);
 
   // ── Port conflict handling & startup ──────────────────────
 

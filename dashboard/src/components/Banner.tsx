@@ -63,7 +63,7 @@ export default function Banner() {
         
         <span style={{ fontWeight: 500, letterSpacing: '0.01em' }}>
           <span style={{ opacity: 0.7 }}>Support indie development. </span>
-          <a href="#" style={{ color: 'white', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '1px', transition: 'border-color 0.2s' }}>
+          <a href="/pro" style={{ color: 'white', textDecoration: 'none', borderBottom: '1px solid rgba(255,255,255,0.3)', paddingBottom: '1px', transition: 'border-color 0.2s' }}>
             Upgrade to Pro
           </a>
         </span>

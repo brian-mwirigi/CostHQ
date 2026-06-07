@@ -428,7 +428,8 @@ export function exportSessions(format: 'json' | 'csv', limit?: number): string {
   return [header, ...rows].join('\n');
 }
 
-export function getStats(): SessionStats {
+export function getStats(days?: number): SessionStats {
+  const timeFilter = days ? `AND start_time >= date('now', '-' || ? || ' days')` : '';
   const stmt = db.prepare(`
     SELECT 
       COUNT(*) as total,
@@ -437,9 +438,9 @@ export function getStats(): SessionStats {
       SUM(commits) as total_commits,
       SUM(ai_cost) as total_cost,
       AVG(duration) as avg_time
-    FROM sessions WHERE status = 'completed'
+    FROM sessions WHERE status = 'completed' ${timeFilter}
   `);
-  const result = stmt.get() as any;
+  const result = days ? stmt.get(days) as any : stmt.get() as any;
 
   return {
     totalSessions: result.total || 0,
@@ -795,23 +796,24 @@ export function getSessionDetail(sessionId: number): {
   };
 }
 
-export function getDailyCosts(days: number = 30): Array<{
+export function getDailyCosts(days?: number): Array<{
   day: string;
   cost: number;
   sessions: number;
   tokens: number;
 }> {
+  const timeFilter = days ? `WHERE start_time >= date('now', '-' || ? || ' days')` : '';
   const stmt = db.prepare(`
     SELECT date(start_time) as day,
            SUM(ai_cost) as cost,
            COUNT(*) as sessions,
            SUM(ai_tokens) as tokens
     FROM sessions
-    WHERE start_time >= date('now', '-' || ? || ' days')
+    ${timeFilter}
     GROUP BY date(start_time)
     ORDER BY day
   `);
-  const rows = stmt.all(days) as any[];
+  const rows = days ? stmt.all(days) as any[] : stmt.all() as any[];
   return rows.map(r => ({
     day: r.day,
     cost: Math.round((r.cost || 0) * 10000) / 10000,
@@ -820,7 +822,7 @@ export function getDailyCosts(days: number = 30): Array<{
   }));
 }
 
-export function getModelBreakdown(): Array<{
+export function getModelBreakdown(days?: number): Array<{
   provider: string;
   model: string;
   calls: number;
@@ -829,6 +831,7 @@ export function getModelBreakdown(): Array<{
   completionTokens: number;
   totalCost: number;
 }> {
+  const timeFilter = days ? `WHERE timestamp >= date('now', '-' || ? || ' days')` : '';
   const stmt = db.prepare(`
     SELECT provider, model,
            COUNT(*) as calls,
@@ -837,10 +840,11 @@ export function getModelBreakdown(): Array<{
            SUM(COALESCE(completion_tokens, 0)) as completion_tokens,
            SUM(cost) as total_cost
     FROM ai_usage
+    ${timeFilter}
     GROUP BY provider, model
     ORDER BY total_cost DESC
   `);
-  const rows = stmt.all() as any[];
+  const rows = days ? stmt.all(days) as any[] : stmt.all() as any[];
   return rows.map(r => ({
     provider: r.provider,
     model: r.model,
@@ -852,14 +856,16 @@ export function getModelBreakdown(): Array<{
   }));
 }
 
-export function getTopSessions(limit: number = 10): Session[] {
+export function getTopSessions(limit: number = 10, days?: number): Session[] {
+  const timeFilter = days ? `AND start_time >= date('now', '-' || ? || ' days')` : '';
   const stmt = db.prepare(`
     SELECT * FROM sessions
-    WHERE ai_cost > 0
+    WHERE ai_cost > 0 ${timeFilter}
     ORDER BY ai_cost DESC
-    LIMIT ?
+    LIMIT ${days ? '?' : '?'}
   `);
-  const rows = stmt.all(limit) as any[];
+  const params = days ? [days, limit] : [limit];
+  const rows = stmt.all(...params) as any[];
   return rows.map(mapSession);
 }
 
@@ -961,23 +967,24 @@ export function getActivityHeatmap(): Array<{
 }
 
 /** Daily tokens trend (separate from cost) */
-export function getDailyTokens(days: number = 30): Array<{
+export function getDailyTokens(days?: number): Array<{
   day: string;
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
 }> {
+  const timeFilter = days ? `WHERE a.timestamp >= date('now', '-' || ? || ' days')` : '';
   const stmt = db.prepare(`
     SELECT date(a.timestamp) as day,
            SUM(COALESCE(a.prompt_tokens, 0)) as prompt_tokens,
            SUM(COALESCE(a.completion_tokens, 0)) as completion_tokens,
            SUM(a.tokens) as total_tokens
     FROM ai_usage a
-    WHERE a.timestamp >= date('now', '-' || ? || ' days')
+    ${timeFilter}
     GROUP BY date(a.timestamp)
     ORDER BY day
   `);
-  const rows = stmt.all(days) as any[];
+  const rows = days ? stmt.all(days) as any[] : stmt.all() as any[];
   return rows.map(r => ({
     day: r.day,
     promptTokens: r.prompt_tokens || 0,
@@ -987,7 +994,7 @@ export function getDailyTokens(days: number = 30): Array<{
 }
 
 /** Cost velocity: per-session cost/hour */
-export function getCostVelocity(limit: number = 50): Array<{
+export function getCostVelocity(limit: number = 50, days?: number): Array<{
   id: number;
   name: string;
   startTime: string;
@@ -995,14 +1002,16 @@ export function getCostVelocity(limit: number = 50): Array<{
   aiCost: number;
   costPerHour: number;
 }> {
+  const timeFilter = days ? `AND start_time >= date('now', '-' || ? || ' days')` : '';
   const stmt = db.prepare(`
     SELECT id, name, start_time, duration, ai_cost
     FROM sessions
-    WHERE status = 'completed' AND duration > 0 AND ai_cost > 0
+    WHERE status = 'completed' AND duration > 0 AND ai_cost > 0 ${timeFilter}
     ORDER BY start_time DESC
-    LIMIT ?
+    LIMIT ${days ? '?' : '?'}
   `);
-  const rows = stmt.all(limit) as any[];
+  const params = days ? [days, limit] : [limit];
+  const rows = stmt.all(...params) as any[];
   return rows.map(r => ({
     id: r.id,
     name: r.name,

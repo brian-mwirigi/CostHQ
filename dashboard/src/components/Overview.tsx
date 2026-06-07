@@ -1,12 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
-  AreaChart, Area, BarChart, Bar,
+  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { fetchApi } from '../api';
 import { useInterval } from '../hooks/useInterval';
 import { formatCost, formatDuration, formatTokens, formatDay } from '../utils/format';
-import { IconSessions, IconDollar, IconClock, IconTrendUp, IconCircleDot, IconFile, IconGitCommit } from './Icons';
+import { IconSessions, IconDollar, IconClock, IconTrendUp, IconCircleDot, IconFile, IconGitCommit, IconActivity } from './Icons';
 
 interface Stats {
   totalSessions: number;
@@ -49,28 +49,43 @@ interface CostVelocityItem {
   costPerHour: number;
 }
 
+interface ModelBreakdownItem {
+  provider: string;
+  model: string;
+  calls: number;
+  totalCost: number;
+}
+
 interface Props {
   onSessionClick: (id: number) => void;
 }
 
+const COLORS = ['#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#6366f1'];
+
 export default function Overview({ onSessionClick }: Props) {
+  const [days, setDays] = useState<number>(30);
   const [stats, setStats] = useState<Stats | null>(null);
   const [daily, setDaily] = useState<DailyCost[]>([]);
   const [dailyTokens, setDailyTokens] = useState<DailyToken[]>([]);
   const [top, setTop] = useState<TopSession[]>([]);
   const [velocity, setVelocity] = useState<CostVelocityItem[]>([]);
+  const [modelBreakdown, setModelBreakdown] = useState<ModelBreakdownItem[]>([]);
+
+  const fetchAll = useCallback(() => {
+    const daysStr = days === 0 ? '' : days.toString();
+    const query = daysStr ? { days: daysStr } : undefined;
+    
+    fetchApi<Stats>('/api/stats', query).then(setStats).catch(console.error);
+    fetchApi<DailyCost[]>('/api/daily-costs', query).then(setDaily).catch(console.error);
+    fetchApi<DailyToken[]>('/api/daily-tokens', query).then(setDailyTokens).catch(console.error);
+    fetchApi<TopSession[]>('/api/top-sessions', { limit: '5', ...(query || {}) }).then(setTop).catch(console.error);
+    fetchApi<CostVelocityItem[]>('/api/cost-velocity', { limit: '20', ...(query || {}) }).then(setVelocity).catch(console.error);
+    fetchApi<ModelBreakdownItem[]>('/api/model-breakdown', query).then(setModelBreakdown).catch(console.error);
+  }, [days]);
 
   useEffect(() => {
     fetchAll();
-  }, []);
-
-  const fetchAll = useCallback(() => {
-    fetchApi<Stats>('/api/stats').then(setStats).catch(console.error);
-    fetchApi<DailyCost[]>('/api/daily-costs', { days: '30' }).then(setDaily).catch(console.error);
-    fetchApi<DailyToken[]>('/api/daily-tokens', { days: '30' }).then(setDailyTokens).catch(console.error);
-    fetchApi<TopSession[]>('/api/top-sessions', { limit: '5' }).then(setTop).catch(console.error);
-    fetchApi<CostVelocityItem[]>('/api/cost-velocity', { limit: '20' }).then(setVelocity).catch(console.error);
-  }, []);
+  }, [fetchAll]);
 
   useInterval(fetchAll, 30_000);
 
@@ -83,9 +98,23 @@ export default function Overview({ onSessionClick }: Props) {
 
   return (
     <div className="page">
-      <div className="page-header">
-        <h1 className="page-title">Overview</h1>
-        <div className="page-subtitle">Aggregate metrics across all completed sessions</div>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <h1 className="page-title">Overview</h1>
+          <div className="page-subtitle">Aggregate metrics across all completed sessions</div>
+        </div>
+        <select 
+          className="filter-select" 
+          value={days} 
+          onChange={(e) => setDays(Number(e.target.value))}
+          style={{ width: 140 }}
+        >
+          <option value={7}>Last 7 Days</option>
+          <option value={14}>Last 14 Days</option>
+          <option value={30}>Last 30 Days</option>
+          <option value={90}>Last 90 Days</option>
+          <option value={0}>All Time</option>
+        </select>
       </div>
 
       {/* All KPIs */}
@@ -128,20 +157,25 @@ export default function Overview({ onSessionClick }: Props) {
 
       {/* Burn rate projection */}
       {daily.length > 0 && (
-        <div className="card" style={{ marginBottom: 16 }}>
-          <div className="card-header">
-            <div className="card-title">Spend Projection</div>
-            <div className="card-meta">based on last {daily.length} days</div>
+        <div className="card" style={{ 
+          marginBottom: 24, 
+          background: 'linear-gradient(135deg, rgba(234, 179, 8, 0.1), rgba(234, 179, 8, 0.02))', 
+          borderColor: 'rgba(234, 179, 8, 0.2)',
+          boxShadow: '0 4px 20px -2px rgba(234, 179, 8, 0.05)'
+        }}>
+          <div className="card-header" style={{ borderBottomColor: 'rgba(234, 179, 8, 0.1)' }}>
+            <div className="card-title" style={{ color: '#facc15' }}>Spend Projection</div>
+            <div className="card-meta" style={{ color: 'rgba(234, 179, 8, 0.6)' }}>based on last {daily.length} days</div>
           </div>
           <div className="card-body">
-            <div style={{ display: 'flex', gap: 32, fontSize: 13, color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', gap: 48, fontSize: 14 }}>
               <div>
-                <span style={{ color: 'var(--text-tertiary)' }}>Avg daily: </span>
-                <span className="mono" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{formatCost(avgDailyCost)}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Avg daily: </span>
+                <span className="mono" style={{ color: '#facc15', fontWeight: 600, fontSize: 16 }}>{formatCost(avgDailyCost)}</span>
               </div>
               <div>
-                <span style={{ color: 'var(--text-tertiary)' }}>Projected monthly: </span>
-                <span className="mono" style={{ color: projectedMonthly > 100 ? 'var(--danger)' : 'var(--text-primary)', fontWeight: 600 }}>{formatCost(projectedMonthly)}</span>
+                <span style={{ color: 'var(--text-secondary)' }}>Projected monthly: </span>
+                <span className="mono" style={{ color: projectedMonthly > 100 ? '#ef4444' : '#facc15', fontWeight: 700, fontSize: 16 }}>{formatCost(projectedMonthly)}</span>
               </div>
             </div>
           </div>
@@ -242,7 +276,39 @@ export default function Overview({ onSessionClick }: Props) {
         </div>
       </div>
 
-      {/* Cost Velocity */}
+      <div className="grid grid--2">
+        {/* Cost by Model */}
+        {modelBreakdown.length > 0 && (
+          <div className="card">
+            <div className="card-header">
+              <div className="card-title">Cost by Model</div>
+              <div className="card-meta">top models</div>
+            </div>
+            <div className="card-body">
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={modelBreakdown.slice(0, 6)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={90}
+                    paddingAngle={5}
+                    dataKey="totalCost"
+                    stroke="none"
+                  >
+                    {modelBreakdown.slice(0, 6).map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<ModelTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {/* Cost Velocity */}
       {velocity.length > 0 && (
         <div className="card">
           <div className="card-header">
@@ -261,6 +327,7 @@ export default function Overview({ onSessionClick }: Props) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
@@ -304,6 +371,17 @@ function VelocityTooltip({ active, payload }: any) {
     <div className="chart-tooltip">
       <div className="tt-label">{d.name}</div>
       <div className="tt-value">{formatCost(d.costPerHour)}/hr · {formatCost(d.aiCost)} total · {formatDuration(d.duration)}</div>
+    </div>
+  );
+}
+
+function ModelTooltip({ active, payload }: any) {
+  if (!active || !payload?.length) return null;
+  const d = payload[0].payload;
+  return (
+    <div className="chart-tooltip">
+      <div className="tt-label">{d.model} <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>({d.provider})</span></div>
+      <div className="tt-value" style={{ color: payload[0].payload.fill }}>{formatCost(d.totalCost)} · {d.calls} calls</div>
     </div>
   );
 }
