@@ -36,9 +36,11 @@
 ## What's New in v3.2.0
 
 - **CostHQ Rebrand & Redesign** — Complete Emerald Glassmorphism visual overhaul and brand evolution from Devsession to CostHQ.
+- **Interactive Local Models & Hardware Presets** — Instantly map local model inference to real-world cloud GPU (RunPod/Vast) hardware costs or local electricity costs via an interactive CLI menu.
+- **Cloud Pricing UI** — Add, edit, or override token prices for any cloud model directly from the web dashboard.
+- **Updated June 2026 Model Pricing** — Internal defaults now map the latest Anthropic, OpenAI, DeepSeek, Google, and open-source models with up-to-date accurate pricing.
 - **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI!
 - **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
-- **In-App Feedback** — Built-in feedback modal allowing you to report bugs or request features directly from the dashboard.
 - **Massive Performance Boosts** — SQLite performance indexes added, `simple-git` instances are now cached, and `puppeteer` was removed making installs significantly faster.
 
 [Full Changelog →](https://github.com/brian-mwirigi/CostHQ/blob/main/CHANGELOG.md)
@@ -272,11 +274,19 @@ Opens a local web app at `http://localhost:3737` with five pages:
 - Prompt:completion ratio analysis with inline distribution bars
 - Full model table with avg cost/call
 
+### Local Models & Hardware Presets
+- Add and track local, edge, or private models (Ollama, vLLM, llama.cpp)
+- Map models to real-world hardware hourly costs (Local RTX 4090, Cloud A100/H100 via RunPod/Vast, Apple Silicon CPU)
+- View total time spent computing per hardware tier
+
+### Cloud Pricing Config
+- View built-in default prices for all major AI models (updated June 2026)
+- Add, edit, or remove custom pricing overrides directly from the UI
+
 ### Insights
 - **File Hotspots** — most frequently changed files across all sessions with churn bars
 - **Activity Heatmap** — sessions by day-of-week and hour (7x24 grid)
 - **Projects** — per-project cost, sessions, duration, files, commits, tokens; cost bar chart
-- **Pricing** — model pricing table (input/output per 1M tokens)
 
 ### Alerts
 - Set daily, total, and per-session cost thresholds
