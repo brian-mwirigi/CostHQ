@@ -7,7 +7,7 @@ import {
   recoverStaleSessions, getSessionsPaginated, getSessionDetail,
   getDailyCosts, getModelBreakdown, getTopSessions, getProviderBreakdown,
   getFileHotspots, getActivityHeatmap, getDailyTokens, getCostVelocity,
-  getProjectBreakdown, getTokenRatios, getPricingPath
+  getProjectBreakdown, getTokenRatios, getPricingPath, deletePricing
 } from '../src/db';
 
 beforeEach(() => { clearAllData(); });
@@ -268,9 +268,9 @@ describe('Recovery', () => {
 describe('Pricing', () => {
   it('loadPricing returns defaults', () => {
     const p = loadPricing();
-    expect(p['claude-sonnet-4']).toBeDefined();
+    expect(p['claude-3.5-sonnet']).toBeDefined();
     expect(p['gpt-4o']).toBeDefined();
-    expect(p['claude-sonnet-4'].input).toBe(3);
+    expect(p['claude-3.5-sonnet'].input).toBe(3);
   });
 
   it('setPricing adds custom pricing that persists', () => {
@@ -284,6 +284,29 @@ describe('Pricing', () => {
     resetPricing();
     const p = loadPricing();
     expect(p['temp-model']).toBeUndefined();
+  });
+
+  it('deletePricing removes a specific custom override', () => {
+    setPricing('keep-model', 5, 5);
+    setPricing('delete-model', 10, 10);
+    deletePricing('delete-model');
+    const p = loadPricing();
+    expect(p['keep-model']).toEqual({ input: 5, output: 5 });
+    expect(p['delete-model']).toBeUndefined();
+  });
+
+  it('deletePricing handles non-existent models gracefully', () => {
+    setPricing('some-model', 1, 1);
+    deletePricing('unknown-model');
+    const p = loadPricing();
+    expect(p['some-model']).toEqual({ input: 1, output: 1 });
+  });
+
+  it('deletePricing ignores if pricing file does not exist', () => {
+    resetPricing();
+    const { rmSync } = require('fs');
+    try { rmSync(getPricingPath()); } catch (_) {}
+    expect(() => deletePricing('any')).not.toThrow();
   });
 
   it('loadPricing blocks prototype pollution keys', () => {

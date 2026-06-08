@@ -136,16 +136,16 @@ describe('Proxy Cache', () => {
 
 describe('calculateCost', () => {
   it('calculates cost from pricing table', () => {
-    // claude-sonnet-4: input=$3/1M, output=$15/1M
-    const cost = calculateCost('anthropic', 'claude-sonnet-4', 700000, 300000);
+    // claude-3.5-sonnet: input=$3/1M, output=$15/1M
+    const cost = calculateCost('anthropic', 'claude-3.5-sonnet', 700000, 300000);
     // 700k tokens * $3/1M = $2.10, 300k * $15/1M = $4.50
     expect(cost).toBeCloseTo(6.60, 1);
   });
 
   it('calculates cost for gpt-4o', () => {
-    // gpt-4o: input=$5/1M, output=$15/1M
+    // gpt-4o: input=$2.50/1M, output=$10.00/1M
     const cost = calculateCost('openai', 'gpt-4o', 1000000, 500000);
-    expect(cost).toBeCloseTo(5 + 7.5, 1);
+    expect(cost).toBeCloseTo(2.5 + 5.0, 1);
   });
 
   it('returns 0 for unknown model', () => {
@@ -155,7 +155,7 @@ describe('calculateCost', () => {
 
   it('prefix-matches model variants (gpt-4o-2024-05-13 -> gpt-4o)', () => {
     const cost = calculateCost('openai', 'gpt-4o-2024-05-13', 1_000_000, 0);
-    expect(cost).toBeCloseTo(5, 1); // $5/1M input
+    expect(cost).toBeCloseTo(2.50, 1); // $2.50/1M input
   });
 
   it('prefers longest prefix match when multiple match', () => {

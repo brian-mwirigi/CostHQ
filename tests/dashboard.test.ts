@@ -209,7 +209,42 @@ describe('GET /api/v1/pricing', () => {
   it('returns pricing table', async () => {
     const res = await request(app).get('/api/v1/pricing');
     expect(res.status).toBe(200);
-    expect(res.body).toHaveProperty('claude-sonnet-4');
+    expect(res.body).toHaveProperty('claude-3.5-sonnet');
+  });
+});
+
+describe('POST /api/v1/pricing', () => {
+  it('updates pricing successfully', async () => {
+    const res = await request(app)
+      .post('/api/v1/pricing')
+      .send({ model: 'test-model', input: 1.5, output: 2.5 });
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    
+    const getRes = await request(app).get('/api/v1/pricing');
+    expect(getRes.body['test-model']).toEqual({ input: 1.5, output: 2.5 });
+  });
+
+  it('returns 400 for invalid payload', async () => {
+    const res = await request(app)
+      .post('/api/v1/pricing')
+      .send({ model: 'test-model' }); // missing input/output
+    expect(res.status).toBe(400);
+  });
+});
+
+describe('DELETE /api/v1/pricing/:model', () => {
+  it('deletes pricing successfully', async () => {
+    await request(app)
+      .post('/api/v1/pricing')
+      .send({ model: 'delete-me', input: 1, output: 2 });
+      
+    const delRes = await request(app).delete('/api/v1/pricing/delete-me');
+    expect(delRes.status).toBe(200);
+    expect(delRes.body.success).toBe(true);
+
+    const getRes = await request(app).get('/api/v1/pricing');
+    expect(getRes.body['delete-me']).toBeUndefined();
   });
 });
 
