@@ -645,63 +645,99 @@ export function recoverStaleSessions(maxAgeHours: number = 24): Session[] {
 const PRICING_PATH = join(DB_DIR, 'pricing.json');
 
 const DEFAULT_PRICING: Record<string, { input: number; output: number }> = {
-  // Anthropic (per 1M tokens)
-  'claude-opus-4-6': { input: 15, output: 75 },
-  'claude-sonnet-4-5': { input: 3, output: 15 },
-  'claude-sonnet-4.5': { input: 3, output: 15 },
-  'claude-sonnet-4': { input: 3, output: 15 },
-  'claude-haiku-4.5': { input: 1.00, output: 5.00 },
-  'claude-haiku-3.5': { input: 0.80, output: 4 },
-  'claude-3.5-sonnet': { input: 3, output: 15 },
-  'claude-3.5-haiku': { input: 1, output: 5 },
-  'claude-3-opus': { input: 15, output: 75 },
-  'claude-3-sonnet': { input: 3, output: 15 },
-  'claude-3-haiku': { input: 0.25, output: 1.25 },
-  'claude-2.1': { input: 8, output: 24 },
-  'claude-2.0': { input: 8, output: 24 },
-  'claude-instant': { input: 0.80, output: 2.40 },
-
-  // OpenAI (per 1M tokens)
-  'gpt-5.2': { input: 1.75, output: 14.00 },
-  'gpt-5.2-pro': { input: 21.00, output: 168.00 },
-  'gpt-5-mini': { input: 0.25, output: 2.00 },
-  'gpt-4.1': { input: 2, output: 8 },
-  'gpt-4.1-mini': { input: 0.40, output: 1.60 },
+  // ─── OpenAI ────────────────────────────
   'gpt-4.1-nano': { input: 0.10, output: 0.40 },
-  'gpt-4o': { input: 5.00, output: 15.00 }, // updated to match aitoken-cli pricing
   'gpt-4o-mini': { input: 0.15, output: 0.60 },
-  'o3': { input: 2, output: 8 },
-  'o4-mini': { input: 1.10, output: 4.40 },
+  'gpt-4.1-mini': { input: 0.40, output: 1.60 },
+  'gpt-4.1': { input: 2.00, output: 8.00 },
+  'gpt-4o': { input: 2.50, output: 10.00 },
+  'gpt-5-mini': { input: 0.25, output: 2.00 },
+  'gpt-5.4-nano': { input: 0.20, output: 1.25 },
+  'gpt-5.4-mini': { input: 0.75, output: 4.50 },
+  'gpt-5.4': { input: 2.50, output: 15.00 },
+  'gpt-5.4-pro': { input: 30.00, output: 180.00 },
+  'gpt-5.5': { input: 5.00, output: 30.00 },
+  'gpt-5.5-pro': { input: 30.00, output: 180.00 },
+  'o3': { input: 2.00, output: 8.00 },
+  'o3-pro': { input: 20.00, output: 80.00 },
+  'o4-mini': { input: 0.55, output: 2.20 },
+  // Legacy OpenAI
   'o1-preview': { input: 15.00, output: 60.00 },
   'o1-mini': { input: 3.00, output: 12.00 },
   'gpt-4': { input: 30.00, output: 60.00 },
-  'gpt-4-32k': { input: 60.00, output: 120.00 },
   'gpt-4-turbo': { input: 10.00, output: 30.00 },
   'gpt-3.5-turbo': { input: 0.50, output: 1.50 },
-  'gpt-3.5-turbo-16k': { input: 3.00, output: 4.00 },
 
-  // Google (per 1M tokens)
-  'gemini-2.5-pro': { input: 1.25, output: 10 },
-  'gemini-2.5-flash': { input: 0.15, output: 0.60 },
+  // ─── Anthropic ─────────────────────────
+  'claude-haiku-4.5': { input: 1.00, output: 5.00 },
+  'claude-sonnet-4.6': { input: 3.00, output: 15.00 },
+  'claude-opus-4.6': { input: 5.00, output: 25.00 },
+  'claude-opus-4.7': { input: 5.00, output: 25.00 },
+  'claude-opus-4.8': { input: 5.00, output: 25.00 },
+  // Legacy Anthropic
+  'claude-3.5-sonnet': { input: 3.00, output: 15.00 },
+  'claude-3.5-haiku': { input: 1.00, output: 5.00 },
+  'claude-3-opus': { input: 15.00, output: 75.00 },
+
+  // ─── Google ────────────────────────────
   'gemini-2.0-flash': { input: 0.10, output: 0.40 },
+  'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },
+  'gemini-2.5-flash': { input: 0.30, output: 2.50 },
+  'gemini-2.5-pro': { input: 1.25, output: 10.00 },
+  'gemini-2.5-pro-200k': { input: 2.50, output: 15.00 },
+  'gemini-3-flash': { input: 0.50, output: 3.00 },
+  'gemini-3.1-pro': { input: 2.00, output: 12.00 },
+  'gemini-3.5-flash': { input: 1.50, output: 9.00 },
+  // Legacy Google
   'gemini-1.5-pro': { input: 3.50, output: 10.50 },
   'gemini-1.5-flash': { input: 0.075, output: 0.30 },
-  'gemini-1.0-pro': { input: 0.50, output: 1.50 },
-  'gemini-pro': { input: 0.50, output: 1.50 },
-  'gemini-pro-vision': { input: 0.25, output: 0.50 },
 
-  // Azure OpenAI (per 1M tokens)
-  'gpt-35-turbo': { input: 0.50, output: 1.50 },
-
-  // Cohere (per 1M tokens)
-  'command-r-plus': { input: 3.00, output: 15.00 },
-  'command-r': { input: 0.50, output: 1.50 },
-  'command': { input: 1.00, output: 2.00 },
-  'command-light': { input: 0.30, output: 0.60 },
-
-  // DeepSeek
-  'deepseek-r1': { input: 0.55, output: 2.19 },
+  // ─── DeepSeek ──────────────────────────
   'deepseek-v3': { input: 0.27, output: 1.10 },
+  'deepseek-v4-flash': { input: 0.14, output: 0.28 },
+  'deepseek-v4-pro': { input: 0.435, output: 0.87 },
+
+  // ─── xAI (Grok) ────────────────────────
+  'grok-3-mini': { input: 0.30, output: 0.50 },
+  'grok-3': { input: 3.00, output: 15.00 },
+  'grok-4.3': { input: 1.25, output: 2.50 },
+
+  // ─── Mistral AI ────────────────────────
+  'mistral-nemo': { input: 0.15, output: 0.15 },
+  'devstral-small-2': { input: 0.10, output: 0.30 },
+  'mistral-small-4': { input: 0.10, output: 0.30 },
+  'ministral-14b': { input: 0.20, output: 0.20 },
+  'mixtral-8x7b': { input: 0.70, output: 0.70 },
+  'mistral-medium-3.5': { input: 1.50, output: 7.50 },
+  'pixtral-large': { input: 2.00, output: 6.00 },
+  'magistral-small': { input: 0.50, output: 1.50 },
+  'mistral-large-3': { input: 0.50, output: 4.00 },
+
+  // ─── Meta (Llama) ──────────────────────
+  'llama-4-scout': { input: 0.08, output: 0.30 },
+  'llama-4-maverick': { input: 0.15, output: 0.60 },
+  'llama-3.3-70b': { input: 0.88, output: 0.88 },
+
+  // ─── Cohere ────────────────────────────
+  'command-r7b': { input: 0.0375, output: 0.15 },
+  'command-a': { input: 2.50, output: 10.00 },
+
+  // ─── Perplexity ────────────────────────
+  'sonar': { input: 1.00, output: 1.00 },
+  'sonar-pro': { input: 3.00, output: 15.00 },
+  'sonar-reasoning-pro': { input: 2.00, output: 8.00 },
+
+  // ─── Groq (Inference) ──────────────────
+  'llama-3.3-70b-groq': { input: 0.59, output: 0.79 },
+  'gpt-oss-120b-groq': { input: 0.15, output: 0.60 },
+
+  // ─── Together AI ───────────────────────
+  'lfm2-24b-a2b': { input: 0.03, output: 0.12 },
+  'gemma-3n-e4b': { input: 0.06, output: 0.12 },
+  'gpt-oss-120b-together': { input: 0.15, output: 0.60 },
+  'minimax-m2.7': { input: 0.30, output: 1.20 },
+  'deepseek-v4-pro-together': { input: 2.10, output: 4.40 },
+  'kimi-k2.6': { input: 1.20, output: 4.50 },
 };
 
 export function loadPricing(): Record<string, { input: number; output: number }> {
