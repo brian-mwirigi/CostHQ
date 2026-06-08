@@ -580,6 +580,7 @@ program
         pricingInfo = { source: 'local', modelKnown: true, inputPer1M: 0, outputPer1M: 0, costPerHour: rate, durationSeconds: durationSec };
       } else if (rate !== null && durationSec === undefined) {
         // Local model registered but no --duration provided — cost is $0, just log tokens
+        console.log(chalk.yellow(`\nWarning: Local model '${options.provider}/${options.model}' is registered at $${rate}/hr, but no --duration was provided. Cost will be logged as $0.`));
         cost = 0;
         pricingInfo = { source: 'local', modelKnown: true, inputPer1M: 0, outputPer1M: 0, costPerHour: rate };
       } else {
@@ -1135,22 +1136,49 @@ cloudCmd
 
 const localModelsCmd = program.command('local-models').description('Manage local AI model configurations (Ollama, llama.cpp, vLLM, etc.)');
 
+const HARDWARE_PRESETS: Record<string, { costPerHour: number; desc: string }> = {
+  'laptop': { costPerHour: 0.05, desc: 'M-Series / Basic GPU' },
+  'desktop': { costPerHour: 0.15, desc: 'High-end Consumer GPU (RTX 3080/4080)' },
+  'cloud-consumer': { costPerHour: 0.50, desc: 'Cloud RTX 4090 / Vast.ai' },
+  'cloud-enterprise': { costPerHour: 2.50, desc: 'Cloud A100/H100 / AWS' }
+};
+
+function printPresetHelp() {
+  console.log(chalk.red('\nError: Must provide either --cost-per-hour <rate> or a valid --preset <name>'));
+  console.log(chalk.gray('Available presets:'));
+  for (const [key, val] of Object.entries(HARDWARE_PRESETS)) {
+    console.log(chalk.gray(`  --preset ${key.padEnd(16)} ($${val.costPerHour.toFixed(2)}/hr) - ${val.desc}`));
+  }
+  console.log('');
+}
+
 localModelsCmd
   .command('add <provider/model>')
   .description('Register a local model with compute cost rate')
-  .requiredOption('--cost-per-hour <rate>', 'Cost per hour of GPU compute in USD', parseFloat)
+  .option('--cost-per-hour <rate>', 'Cost per hour of GPU compute in USD', parseFloat)
+  .option('--preset <name>', 'Use a hardware preset (laptop, desktop, cloud-consumer, cloud-enterprise)')
   .option('--gpu <name>', 'GPU name (e.g. "RTX 4090")')
   .option('--notes <text>', 'Notes about this model')
   .action((providerModel, options) => {
     const parts = providerModel.split('/');
     if (parts.length < 2) {
-      console.log(chalk.red('\nFormat: cs local-models add <provider>/<model> --cost-per-hour <rate>'));
-      console.log(chalk.gray('Example: cs local-models add ollama/llama3 --cost-per-hour 0.50\n'));
+      console.log(chalk.red('\nFormat: cs local-models add <provider>/<model> [--cost-per-hour <rate> | --preset <name>]'));
+      console.log(chalk.gray('Example: cs local-models add ollama/llama3 --preset laptop\n'));
       return;
     }
+    
+    let costPerHour: number | null = null;
+    if (options.costPerHour !== undefined && !isNaN(options.costPerHour)) costPerHour = options.costPerHour;
+    else if (options.preset && HARDWARE_PRESETS[options.preset.toLowerCase()]) costPerHour = HARDWARE_PRESETS[options.preset.toLowerCase()].costPerHour;
+    
+    if (costPerHour === null) {
+      printPresetHelp();
+      return;
+    }
+
     const [provider, ...rest] = parts;
     const model = rest.join('/');
-    const config = addLocalModel({ provider, model, costPerHour: options.costPerHour, gpuName: options.gpu, notes: options.notes });
+    const config = addLocalModel({ provider, model, costPerHour, gpuName: options.gpu, notes: options.notes });
     console.log(chalk.green(`\n✓ Registered ${provider}/${model} at $${config.costPerHour.toFixed(2)}/hr${config.gpuName ? ` (${config.gpuName})` : ''}\n`));
   });
 
@@ -1194,15 +1222,25 @@ localModelsCmd
 localModelsCmd
   .command('detect')
   .description('Auto-detect Ollama models running locally')
-  .requiredOption('--cost-per-hour <rate>', 'Cost per hour to assign', parseFloat)
+  .option('--cost-per-hour <rate>', 'Cost per hour to assign', parseFloat)
+  .option('--preset <name>', 'Use a hardware preset (laptop, desktop, cloud-consumer, cloud-enterprise)')
   .option('--gpu <name>', 'GPU name')
   .action(async (options) => {
+    let costPerHour: number | null = null;
+    if (options.costPerHour !== undefined && !isNaN(options.costPerHour)) costPerHour = options.costPerHour;
+    else if (options.preset && HARDWARE_PRESETS[options.preset.toLowerCase()]) costPerHour = HARDWARE_PRESETS[options.preset.toLowerCase()].costPerHour;
+    
+    if (costPerHour === null) {
+      printPresetHelp();
+      return;
+    }
+
     console.log(chalk.blue('\n🔍 Scanning for Ollama on localhost:11434...'));
-    const registered = await autoRegisterOllamaModels(options.costPerHour, options.gpu);
+    const registered = await autoRegisterOllamaModels(costPerHour, options.gpu);
     if (registered.length === 0) {
       console.log(chalk.yellow('No Ollama models detected. Is Ollama running?\n'));
     } else {
-      console.log(chalk.green(`✓ Registered ${registered.length} model(s) at $${options.costPerHour.toFixed(2)}/hr:`));
+      console.log(chalk.green(`✓ Registered ${registered.length} model(s) at $${costPerHour.toFixed(2)}/hr:`));
       for (const name of registered) console.log(chalk.gray(`  • ollama/${name}`));
       console.log('');
     }

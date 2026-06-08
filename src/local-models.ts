@@ -55,7 +55,8 @@ function saveConfigFile(configs: LocalModelConfig[]): void {
 }
 
 function modelKey(provider: string, model: string): string {
-  return `${provider.toLowerCase()}/${model.toLowerCase()}`;
+  const baseModel = model.split(':')[0].toLowerCase();
+  return `${provider.toLowerCase()}/${baseModel}`;
 }
 
 // ── Public API ─────────────────────────────────────────────────
