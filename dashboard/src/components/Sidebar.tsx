@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { Page } from '../App';
 import { fetchApi, postApi } from '../api';
-import { IconOverview, IconSessions, IconModels, IconActivity, IconBarChart, IconBell, IconKey, IconRefreshCw, IconDownload, IconMessageSquare, IconHeart, IconTarget } from './Icons';
+import { IconOverview, IconSessions, IconModels, IconActivity, IconBarChart, IconBell, IconKey, IconRefreshCw, IconDownload, IconMessageSquare, IconHeart, IconTarget, IconDollar } from './Icons';
 import ProBadge from '../../../pro/dashboard/ProBadge';
 import { useLicense } from '../../../pro/dashboard/LicenseContext';
 
@@ -10,6 +10,7 @@ const NAV: { page: Page; icon: React.ReactNode; label: string }[] = [
   { page: 'sessions', icon: <IconSessions size={16} />, label: 'Sessions' },
   { page: 'models', icon: <IconModels size={16} />, label: 'Models' },
   { page: 'local-models', icon: <IconModels size={16} />, label: 'Local Models' },
+  { page: 'pricing', icon: <IconDollar size={16} />, label: 'Cloud Pricing' },
   { page: 'insights', icon: <IconBarChart size={16} />, label: 'Insights' },
   { page: 'alerts', icon: <IconBell size={16} />, label: 'Alerts' },
   { page: 'pro', icon: <IconTarget size={16} />, label: 'Pro Ops' },

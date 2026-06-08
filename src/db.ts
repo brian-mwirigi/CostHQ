@@ -773,6 +773,18 @@ export function resetPricing(): void {
   }
 }
 
+export function deletePricing(model: string): void {
+  if (existsSync(PRICING_PATH)) {
+    try {
+      const user = JSON.parse(readFileSync(PRICING_PATH, 'utf-8'));
+      if (model in user) {
+        delete user[model];
+        writeFileSync(PRICING_PATH, JSON.stringify(user, null, 2));
+      }
+    } catch (_) { /* ignore */ }
+  }
+}
+
 export function getPricingPath(): string {
   return PRICING_PATH;
 }

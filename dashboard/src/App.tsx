@@ -16,9 +16,10 @@ import Console from './components/Console';
 import LocalModels from './components/LocalModels';
 import ProOps from '../../pro/dashboard/ProOps';
 import AuditTrail from '../../pro/dashboard/AuditTrail';
+import PricingConfig from './components/PricingConfig';
 import { LicenseProvider } from '../../pro/dashboard/LicenseContext';
 
-export type Page = 'overview' | 'sessions' | 'models' | 'local-models' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share' | 'console' | 'pro' | 'audit';
+export type Page = 'overview' | 'sessions' | 'models' | 'local-models' | 'pricing' | 'insights' | 'alerts' | 'upgrade' | 'donate' | 'feedback' | 'share' | 'console' | 'pro' | 'audit';
 
 // ── URL-based routing (no react-router needed) ─────────────
 
@@ -39,6 +40,7 @@ function parseRoute(): { page: Page; sessionId: number | null } {
   if (path === '/console') return { page: 'console', sessionId: null };
   if (path === '/pro') return { page: 'pro', sessionId: null };
   if (path === '/local-models') return { page: 'local-models', sessionId: null };
+  if (path === '/pricing') return { page: 'pricing', sessionId: null };
   if (path === '/audit') return { page: 'audit', sessionId: null };
   return { page: 'overview', sessionId: null };
 }
@@ -124,6 +126,8 @@ export default function App() {
             <ProOps />
           ) : page === 'local-models' ? (
             <LocalModels />
+          ) : page === 'pricing' ? (
+            <PricingConfig />
           ) : page === 'audit' ? (
             <AuditTrail />
           ) : (

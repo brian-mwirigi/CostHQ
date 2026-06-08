@@ -9,7 +9,7 @@ import {
   getStats, getActiveSessions,
   getSessionsPaginated, getSessionDetail,
   getDailyCosts, getModelBreakdown, getTopSessions,
-  exportSessions, loadPricing,
+  exportSessions, loadPricing, setPricing, deletePricing,
   getProviderBreakdown, getFileHotspots, getActivityHeatmap,
   getDailyTokens, getCostVelocity, getProjectBreakdown, getTokenRatios,
   getSession, getCommits, clearAllData,
@@ -420,6 +420,28 @@ export function buildApiRouter(port: number = 3737): Router {
   router.get('/pricing', (_req, res) => {
     try {
       res.json(loadPricing());
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.post('/pricing', (req, res) => {
+    try {
+      const { model, input, output } = req.body;
+      if (!model || typeof input !== 'number' || typeof output !== 'number') {
+        return res.status(400).json({ error: 'Invalid payload' });
+      }
+      setPricing(model, input, output);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  router.delete('/pricing/:model', (req, res) => {
+    try {
+      deletePricing(req.params.model);
+      res.json({ success: true });
     } catch (e: any) {
       res.status(500).json({ error: e.message });
     }
