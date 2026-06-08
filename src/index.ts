@@ -44,8 +44,10 @@ import { requirePro } from '../pro/src/gates';
 import {
   addLocalModel, removeLocalModel, getLocalModels, isLocalModel,
   isLocalProvider, calculateLocalCost, getLocalModelRate,
-  parseDuration, detectOllamaModels, autoRegisterOllamaModels
+  parseDuration, detectOllamaModels, autoRegisterOllamaModels,
+  COMPUTE_PRESETS
 } from './local-models';
+import { select, input } from '@inquirer/prompts';
 import { logAuditEvent } from '../pro/src/audit';
 
 const program = new Command();
@@ -1136,20 +1138,27 @@ cloudCmd
 
 const localModelsCmd = program.command('local-models').description('Manage local AI model configurations (Ollama, llama.cpp, vLLM, etc.)');
 
-const HARDWARE_PRESETS: Record<string, { costPerHour: number; desc: string }> = {
-  'laptop': { costPerHour: 0.05, desc: 'M-Series / Basic GPU' },
-  'desktop': { costPerHour: 0.15, desc: 'High-end Consumer GPU (RTX 3080/4080)' },
-  'cloud-consumer': { costPerHour: 0.50, desc: 'Cloud RTX 4090 / Vast.ai' },
-  'cloud-enterprise': { costPerHour: 2.50, desc: 'Cloud A100/H100 / AWS' }
-};
+async function promptForCostRate(modelDesc: string): Promise<number> {
+  const choices = Object.entries(COMPUTE_PRESETS).map(([key, val]) => ({
+    name: `${val.label.padEnd(35)} $${val.costPerHour.toFixed(3)}/hr`,
+    value: key,
+  }));
+  choices.push({ name: 'Enter custom rate'.padEnd(35) + ' ...', value: 'custom' });
 
-function printPresetHelp() {
-  console.log(chalk.red('\nError: Must provide either --cost-per-hour <rate> or a valid --preset <name>'));
-  console.log(chalk.gray('Available presets:'));
-  for (const [key, val] of Object.entries(HARDWARE_PRESETS)) {
-    console.log(chalk.gray(`  --preset ${key.padEnd(16)} ($${val.costPerHour.toFixed(2)}/hr) - ${val.desc}`));
+  const choice = await select({
+    message: `No cost rate set for ${modelDesc}.\nPick a preset:`,
+    choices,
+  });
+
+  if (choice === 'custom') {
+    const customRate = await input({
+      message: 'Enter custom rate (e.g. 0.15):',
+      validate: (val: string) => (!isNaN(parseFloat(val)) && parseFloat(val) >= 0) || 'Please enter a valid positive number',
+    });
+    return parseFloat(customRate);
   }
-  console.log('');
+
+  return COMPUTE_PRESETS[choice as keyof typeof COMPUTE_PRESETS].costPerHour;
 }
 
 localModelsCmd
@@ -1159,27 +1168,28 @@ localModelsCmd
   .option('--preset <name>', 'Use a hardware preset (laptop, desktop, cloud-consumer, cloud-enterprise)')
   .option('--gpu <name>', 'GPU name (e.g. "RTX 4090")')
   .option('--notes <text>', 'Notes about this model')
-  .action((providerModel, options) => {
+  .action(async (providerModel, options) => {
     const parts = providerModel.split('/');
     if (parts.length < 2) {
       console.log(chalk.red('\nFormat: cs local-models add <provider>/<model> [--cost-per-hour <rate> | --preset <name>]'));
-      console.log(chalk.gray('Example: cs local-models add ollama/llama3 --preset laptop\n'));
+      console.log(chalk.gray('Example: cs local-models add ollama/llama3 --preset local-gpu\n'));
       return;
     }
     
     let costPerHour: number | null = null;
     if (options.costPerHour !== undefined && !isNaN(options.costPerHour)) costPerHour = options.costPerHour;
-    else if (options.preset && HARDWARE_PRESETS[options.preset.toLowerCase()]) costPerHour = HARDWARE_PRESETS[options.preset.toLowerCase()].costPerHour;
+    else if (options.preset && COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS]) {
+      costPerHour = COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS].costPerHour;
+    }
     
     if (costPerHour === null) {
-      printPresetHelp();
-      return;
+      costPerHour = await promptForCostRate(providerModel);
     }
 
     const [provider, ...rest] = parts;
     const model = rest.join('/');
     const config = addLocalModel({ provider, model, costPerHour, gpuName: options.gpu, notes: options.notes });
-    console.log(chalk.green(`\n✓ Registered ${provider}/${model} at $${config.costPerHour.toFixed(2)}/hr${config.gpuName ? ` (${config.gpuName})` : ''}\n`));
+    console.log(chalk.green(`\n✓ Registered ${provider}/${model} at $${config.costPerHour.toFixed(3)}/hr${config.gpuName ? ` (${config.gpuName})` : ''}\n`));
   });
 
 localModelsCmd
@@ -1228,11 +1238,12 @@ localModelsCmd
   .action(async (options) => {
     let costPerHour: number | null = null;
     if (options.costPerHour !== undefined && !isNaN(options.costPerHour)) costPerHour = options.costPerHour;
-    else if (options.preset && HARDWARE_PRESETS[options.preset.toLowerCase()]) costPerHour = HARDWARE_PRESETS[options.preset.toLowerCase()].costPerHour;
+    else if (options.preset && COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS]) {
+      costPerHour = COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS].costPerHour;
+    }
     
     if (costPerHour === null) {
-      printPresetHelp();
-      return;
+      costPerHour = await promptForCostRate('detected Ollama models');
     }
 
     console.log(chalk.blue('\n🔍 Scanning for Ollama on localhost:11434...'));
@@ -1240,7 +1251,7 @@ localModelsCmd
     if (registered.length === 0) {
       console.log(chalk.yellow('No Ollama models detected. Is Ollama running?\n'));
     } else {
-      console.log(chalk.green(`✓ Registered ${registered.length} model(s) at $${costPerHour.toFixed(2)}/hr:`));
+      console.log(chalk.green(`✓ Registered ${registered.length} model(s) at $${costPerHour.toFixed(3)}/hr:`));
       for (const name of registered) console.log(chalk.gray(`  • ollama/${name}`));
       console.log('');
     }

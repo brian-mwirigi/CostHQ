@@ -19,6 +19,17 @@ export interface LocalModelConfig {
   notes?: string;
 }
 
+export const COMPUTE_PRESETS = {
+  'local-cpu':      { label: 'Local CPU / Apple Silicon',        costPerHour: 0.004 },
+  'local-gpu':      { label: 'Local GPU (RTX 4090, electricity)', costPerHour: 0.07  },
+  'cloud-4090':     { label: 'Cloud RTX 4090 (RunPod/Vast)',      costPerHour: 0.40  },
+  'cloud-a100':     { label: 'Cloud A100 80GB (RunPod)',          costPerHour: 1.89  },
+  'cloud-h100':     { label: 'Cloud H100 80GB (RunPod)',          costPerHour: 2.99  },
+  'free':           { label: 'Treat as free (audit only)',        costPerHour: 0.00  },
+} as const;
+
+export type ComputePreset = keyof typeof COMPUTE_PRESETS;
+
 // ── Storage ────────────────────────────────────────────────────
 
 const DB_DIR = process.env.COSTHQ_DATA_DIR || join(homedir(), '.costhq');
