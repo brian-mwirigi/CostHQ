@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { fetchApi } from '../api';
 import { IconActivity, IconCircleDot, IconZap } from './Icons';
 
 export default function Console() {
@@ -11,6 +12,22 @@ export default function Console() {
   
   const [loading, setLoading] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [activeSessions, setActiveSessions] = useState<any[]>([]);
+
+  const fetchActiveSessions = useCallback(async () => {
+    try {
+      const res = await fetchApi<{ items: any[] }>('/api/sessions?status=active');
+      setActiveSessions(res.items);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchActiveSessions();
+    const interval = setInterval(fetchActiveSessions, 5000);
+    return () => clearInterval(interval);
+  }, [fetchActiveSessions]);
 
   const showMessage = (text: string, type: 'success' | 'error') => {
     setMessage({ text, type });
@@ -69,16 +86,18 @@ export default function Console() {
     }
   };
 
-  const handleEnd = async () => {
-    setLoading('end');
+  const handleEnd = async (sessionId?: number) => {
+    setLoading(`end-${sessionId || 'all'}`);
     try {
       const res = await fetch('/api/v1/console/end', { 
         method: 'POST',
-        headers: getHeaders()
+        headers: getHeaders(),
+        body: JSON.stringify({ sessionId })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       showMessage('Session safely terminated and saved.', 'success');
+      fetchActiveSessions();
     } catch (err: any) {
       showMessage(err.message, 'error');
     } finally {
@@ -249,11 +268,25 @@ export default function Console() {
             <h3 style={{ fontSize: '1.25rem', fontWeight: 600, margin: 0 }}>Terminate Session</h3>
           </div>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 'auto', fontSize: '0.95rem', lineHeight: 1.6 }}>
-            Safely unmounts all background listeners, flushes git commit hashes, and finalizes the timeline database for the active workspace.
+            Safely unmounts background listeners and finalizes the timeline database for active workspaces.
           </p>
-          <button onClick={handleEnd} className="btn-danger" disabled={loading !== null} style={{ marginTop: '24px' }}>
-            {loading === 'end' ? 'Halting Daemons...' : 'Graceful Shutdown'}
-          </button>
+          <div style={{ marginTop: '24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {activeSessions.length === 0 ? (
+              <div style={{ color: 'var(--text-tertiary)', fontSize: '0.9rem', padding: '10px 0' }}>No active sessions found.</div>
+            ) : (
+              activeSessions.map((s: any) => (
+                <div key={s.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(0,0,0,0.2)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <div style={{ overflow: 'hidden' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{s.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-tertiary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{s.workingDirectory}</div>
+                  </div>
+                  <button onClick={() => handleEnd(s.id)} className="btn-danger" disabled={loading !== null} style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                    {loading === `end-${s.id}` ? 'Halting...' : 'Terminate'}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     </div>

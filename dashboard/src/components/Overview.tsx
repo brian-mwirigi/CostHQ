@@ -70,6 +70,17 @@ export default function Overview({ onSessionClick }: Props) {
   const [top, setTop] = useState<TopSession[]>([]);
   const [velocity, setVelocity] = useState<CostVelocityItem[]>([]);
   const [modelBreakdown, setModelBreakdown] = useState<ModelBreakdownItem[]>([]);
+  const [proxyRunning, setProxyRunning] = useState(false);
+  const [togglingProxy, setTogglingProxy] = useState(false);
+
+  const fetchProxyStatus = useCallback(async () => {
+    try {
+      const res = await fetchApi<{ running: boolean }>('/api/proxy/status');
+      setProxyRunning(res.running);
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const fetchAll = useCallback(() => {
     const daysStr = days === 0 ? '' : days.toString();
@@ -81,7 +92,24 @@ export default function Overview({ onSessionClick }: Props) {
     fetchApi<TopSession[]>('/api/top-sessions', { limit: '5', ...(query || {}) }).then(setTop).catch(console.error);
     fetchApi<CostVelocityItem[]>('/api/cost-velocity', { limit: '20', ...(query || {}) }).then(setVelocity).catch(console.error);
     fetchApi<ModelBreakdownItem[]>('/api/model-breakdown', query).then(setModelBreakdown).catch(console.error);
-  }, [days]);
+    fetchProxyStatus();
+  }, [days, fetchProxyStatus]);
+
+  const toggleProxy = async () => {
+    setTogglingProxy(true);
+    try {
+      const endpoint = proxyRunning ? '/api/proxy/stop' : '/api/proxy/start';
+      const res = await fetch(`/api/v1${endpoint}`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setProxyRunning(data.running);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTogglingProxy(false);
+    }
+  };
 
   useEffect(() => {
     fetchAll();
@@ -115,6 +143,33 @@ export default function Overview({ onSessionClick }: Props) {
           <option value={90}>Last 90 Days</option>
           <option value={0}>All Time</option>
         </select>
+      </div>
+
+      <div style={{ marginBottom: 24, padding: '16px 24px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: 4 }}>Auto Track Costs & APIs</div>
+          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Route requests through the Semantic Caching Proxy (Port 3739) to save money and automatically track usage.</div>
+        </div>
+        <button 
+          onClick={toggleProxy} 
+          disabled={togglingProxy}
+          style={{
+            background: proxyRunning ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
+            border: `1px solid ${proxyRunning ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.1)'}`,
+            color: proxyRunning ? '#10b981' : 'var(--text-secondary)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            cursor: togglingProxy ? 'not-allowed' : 'pointer',
+            fontWeight: 600,
+            transition: 'all 0.2s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8
+          }}
+        >
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: proxyRunning ? '#10b981' : 'var(--text-tertiary)', boxShadow: proxyRunning ? '0 0 8px #10b981' : 'none' }} />
+          {togglingProxy ? 'Toggling...' : proxyRunning ? 'Proxy Active' : 'Proxy Inactive'}
+        </button>
       </div>
 
       {/* All KPIs */}

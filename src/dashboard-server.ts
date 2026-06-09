@@ -20,6 +20,7 @@ import { getGitDiff, getCommitDiff, getGitDiffStats, getGitRoot, getGitHead, ini
 import { getLicense, activateLicense, deactivateLicense } from '../pro/src/license';
 import { getProOpsSummary } from '../pro/src/policies';
 import { startWatcher, stopWatcher } from './watcher';
+import { startProxy, stopProxy, isProxyRunning } from './proxy';
 
 interface DashboardOptions {
   port?: number;
@@ -725,14 +726,46 @@ export function buildApiRouter(port: number = 3737): Router {
 
   router.post('/console/end', (req, res) => {
     try {
-      const session = getActiveSessions()[0];
-      if (!session) return res.status(400).json({ error: 'No active session' });
+      const sessionId = req.body.sessionId;
+      const activeSessions = getActiveSessions();
+      
+      const session = sessionId 
+        ? activeSessions.find(s => s.id === sessionId)
+        : activeSessions[0];
+        
+      if (!session) return res.status(400).json({ error: 'No active session found' });
 
       stopWatcher(session.id!);
       stopGitPolling(session.id!);
       endSession(session.id!, new Date().toISOString(), 'Ended from console');
 
       res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.get('/proxy/status', (req, res) => {
+    res.json({ running: isProxyRunning() });
+  });
+
+  router.post('/proxy/start', (req, res) => {
+    try {
+      if (!isProxyRunning()) {
+        startProxy(3739);
+      }
+      res.json({ success: true, running: true });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  router.post('/proxy/stop', (req, res) => {
+    try {
+      if (isProxyRunning()) {
+        stopProxy();
+      }
+      res.json({ success: true, running: false });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

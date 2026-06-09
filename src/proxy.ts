@@ -1,4 +1,5 @@
 import express from 'express';
+import { Server } from 'http';
 import { createHash } from 'crypto';
 import chalk from 'chalk';
 import { getProxyCache, setProxyCache, recordProxyCacheHit } from './db';
@@ -6,6 +7,11 @@ import { loadPricing } from './db';
 import { getProPolicy } from '../pro/src/policies';
 
 const app = express();
+let serverInstance: Server | null = null;
+
+export function isProxyRunning(): boolean {
+  return serverInstance !== null;
+}
 
 // Parse raw body to preserve exact JSON for hashing
 app.use(express.raw({ type: 'application/json' }));
@@ -119,7 +125,8 @@ app.use(async (req, res) => {
 });
 
 export function startProxy(port: number = 3739) {
-  app.listen(port, '127.0.0.1', () => {
+  if (serverInstance) return;
+  serverInstance = app.listen(port, '127.0.0.1', () => {
     console.log(chalk.cyan(`
 🚀 CostHQ Semantic Caching Proxy running on http://127.0.0.1:${port}
     
@@ -132,4 +139,12 @@ To use with Anthropic clients, set:
 Any duplicate identical requests will be served locally for $0.00!
 `));
   });
+}
+
+export function stopProxy() {
+  if (serverInstance) {
+    serverInstance.close();
+    serverInstance = null;
+    console.log(chalk.cyan(`CostHQ Semantic Caching Proxy stopped.`));
+  }
 }
