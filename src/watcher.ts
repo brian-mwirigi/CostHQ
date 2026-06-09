@@ -34,7 +34,8 @@ export function startWatcher(sessionId: number, cwd: string): void {
   watcher
     .on('add', (path) => handleChange(sessionId, path, cwd, 'created'))
     .on('change', (path) => handleChange(sessionId, path, cwd, 'modified'))
-    .on('unlink', (path) => handleChange(sessionId, path, cwd, 'deleted'));
+    .on('unlink', (path) => handleChange(sessionId, path, cwd, 'deleted'))
+    .on('error', (error) => console.error(`Watcher error for session ${sessionId}:`, error.message));
 }
 
 export function stopWatcher(sessionId?: number): void {

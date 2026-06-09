@@ -2109,22 +2109,6 @@ body {
   gap: 24px;
 }
 
-.license-trial {
-  background: rgba(234, 179, 8, 0.1);
-  border: 1px solid rgba(234, 179, 8, 0.2);
-  padding: 16px;
-  border-radius: 8px;
-}
-
-.license-trial p {
-  margin: 0 0 4px;
-}
-
-.license-trial p:last-child {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: 14px;
-}
 
 .license-tiers {
   display: grid;

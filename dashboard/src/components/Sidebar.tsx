@@ -29,7 +29,7 @@ interface Props {
 }
 
 export default function Sidebar({ page, onNavigate }: Props) {
-  const { valid, plan, seats, trial } = useLicense();
+  const { valid, plan, seats } = useLicense();
   const [version, setVersion] = useState('...');
   const [showReset, setShowReset] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -90,7 +90,7 @@ export default function Sidebar({ page, onNavigate }: Props) {
           </div>
           <div style={{ marginTop: 12, padding: '0 12px', fontSize: 11, color: 'var(--text-muted)' }}>
             Plan: <span style={{ textTransform: 'capitalize' }}>{valid ? (plan === 'enterprise' ? `Enterprise (${seats} seats)` : 'Pro') : 'Free'}</span>
-            {!valid && trial.active && <span style={{ display: 'block', color: 'var(--warning)', marginTop: 2 }}>Pro Trial: {trial.daysRemaining} days left</span>}
+
           </div>
         </div>
       </aside>

@@ -1063,8 +1063,6 @@ program
         if (info.plan === 'enterprise') {
           console.log(chalk.gray(`  Seats:  ${info.seats}`));
         }
-      } else if (info.trial.active) {
-        console.log(chalk.yellow(`  Pro Trial:  ${info.trial.daysRemaining} days remaining`));
       }
     }
   });
