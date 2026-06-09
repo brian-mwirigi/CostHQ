@@ -16,8 +16,8 @@ export default function Console() {
 
   const fetchActiveSessions = useCallback(async () => {
     try {
-      const res = await fetchApi<{ items: any[] }>('/api/sessions?status=active');
-      setActiveSessions(res.items);
+      const res = await fetchApi<{ sessions: any[] }>('/api/sessions?status=active');
+      setActiveSessions(res.sessions || []);
     } catch (e) {
       console.error(e);
     }
