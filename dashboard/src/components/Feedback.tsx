@@ -60,7 +60,10 @@ export default function Feedback() {
     <>
       <div className="page-header">
         <h1 className="page-title">Feedback</h1>
-        <p className="page-subtitle">Help improve CostHQ by sharing your thoughts</p>
+        <p className="page-subtitle">
+          Help improve CostHQ by sharing your thoughts.<br />
+          You can also reach me directly at <strong>brianinesh@gmail.com</strong> or DM <strong>briani_nesh</strong> on Discord.
+        </p>
       </div>
 
       <div className="card">
@@ -229,10 +232,10 @@ export default function Feedback() {
                     
                     try {
                       await navigator.clipboard.writeText(bodyText);
-                      alert('Feedback copied to clipboard! Opening Discord...');
+                      alert('Feedback copied to clipboard! Opening Discord... Please DM briani_nesh.');
                       window.open('https://discord.com/app', '_blank');
                     } catch {
-                      alert('Could not copy to clipboard. Please join our Discord and paste your feedback.');
+                      alert('Could not copy to clipboard. Please open Discord and DM briani_nesh with your feedback.');
                       window.open('https://discord.com/app', '_blank');
                     }
                     
