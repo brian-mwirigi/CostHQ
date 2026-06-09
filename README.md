@@ -33,15 +33,14 @@
 
 ---
 
-## What's New in v3.2.0
+## What's New in v4.0.0
 
-- **CostHQ Rebrand & Redesign** — Complete Emerald Glassmorphism visual overhaul and brand evolution from Devsession to CostHQ.
-- **Interactive Local Models & Hardware Presets** — Instantly map local model inference to real-world cloud GPU (RunPod/Vast) hardware costs or local electricity costs via an interactive CLI menu.
-- **Cloud Pricing UI** — Add, edit, or override token prices for any cloud model directly from the web dashboard.
-- **Updated June 2026 Model Pricing** — Internal defaults now map the latest Anthropic, OpenAI, DeepSeek, Google, and open-source models with up-to-date accurate pricing.
-- **Command Center Console** — Start sessions, inject tokens, and terminate sessions directly from the dashboard UI without touching the CLI!
+- **Cloud Pricing UI** — Add, edit, or override token prices for any cloud model directly from the web dashboard. Built-in defaults updated to June 2026.
+- **Enterprise Spend Firewall** — Actively intercepts and blocks expensive AI API calls that violate daily, total, session, or per-project team budget limits.
+- **Runaway Agent Detection** — Automatically detects agents stuck in infinite loops based on cost velocity ($/min), identical model calls, and repetitive file churn.
+- **Tamper-Evident SOC2 Audit Logging** — Append-only cryptographic logging with chained SHA-256 checksums to guarantee enterprise compliance.
+- **Pro Tier Test Coverage** — Guaranteed reliability with a comprehensive automated test suite for all backend Pro functionality.
 - **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
-- **Massive Performance Boosts** — SQLite performance indexes added, `simple-git` instances are now cached, and `puppeteer` was removed making installs significantly faster.
 
 [Full Changelog →](https://github.com/brian-mwirigi/CostHQ/blob/main/CHANGELOG.md)
 

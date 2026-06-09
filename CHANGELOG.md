@@ -5,6 +5,18 @@ All notable changes to codesession-cli will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.0] - 2026-06-09
+
+### Added
+- **Enterprise Spend Firewall** — Actively intercepts and blocks expensive AI API calls that violate daily, total, session, or per-project team budget limits.
+- **Runaway Agent Detection** — Automatically detects agents stuck in infinite loops based on cost velocity ($/min), identical model calls, and repetitive file churn.
+- **Tamper-Evident SOC2 Audit Logging** — Append-only cryptographic logging with chained SHA-256 checksums to guarantee enterprise compliance.
+- **Cloud Pricing UI** — Add, edit, or override token prices for any cloud model directly from the web dashboard.
+- **Pro Tier Test Coverage** — Comprehensive automated test suite ensuring reliability for all Pro capabilities.
+
+### Changed
+- **June 2026 Model Pricing** — Re-aligned default cloud pricing values and model names with the aipricing.guru June 2026 spec.
+
 ## [3.0.0] - 2026-05-24
 
 ### Added
