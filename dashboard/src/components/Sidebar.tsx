@@ -24,6 +24,7 @@ const NAV: { page: Page; icon: React.ReactNode; label: string }[] = [
 
 interface Props {
   page: Page;
+
   onNavigate: (p: Page) => void;
 }
 
@@ -32,8 +33,6 @@ export default function Sidebar({ page, onNavigate }: Props) {
   const [version, setVersion] = useState('...');
   const [showReset, setShowReset] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [email, setEmail] = useState('');
-  const [leadStatus, setLeadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
   useEffect(() => {
     fetchApi<{ version: string }>('/api/version').then(d => setVersion(d.version)).catch(() => {});
@@ -51,21 +50,6 @@ export default function Sidebar({ page, onNavigate }: Props) {
       window.location.reload();
     } catch {
       setResetting(false);
-    }
-  };
-
-  const handleLeadSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !email.includes('@')) return;
-    setLeadStatus('loading');
-    try {
-      await postApi('/api/lead', { email });
-      setLeadStatus('success');
-      setTimeout(() => setLeadStatus('idle'), 3000);
-      setEmail('');
-    } catch {
-      setLeadStatus('error');
-      setTimeout(() => setLeadStatus('idle'), 3000);
     }
   };
 
@@ -91,32 +75,6 @@ export default function Sidebar({ page, onNavigate }: Props) {
             </button>
           ))}
         </nav>
-
-        {!valid && (
-          <div className="lead-capture" style={{ margin: '16px 12px', padding: '12px', background: 'var(--bg-raised)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-            <h4 style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-primary)' }}>Join Pro Waitlist</h4>
-            <p style={{ margin: '0 0 10px', fontSize: '11px', color: 'var(--text-muted)' }}>Get early access to team budgets and cloud sync.</p>
-            <form onSubmit={handleLeadSubmit} style={{ display: 'flex', gap: '6px' }}>
-              <input
-                type="email"
-                placeholder="your@email.com"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                disabled={leadStatus === 'loading' || leadStatus === 'success'}
-                style={{ flex: 1, padding: '6px 8px', fontSize: '11px', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-surface)', color: 'var(--text-primary)', width: '100%' }}
-                required
-              />
-              <button
-                type="submit"
-                disabled={leadStatus === 'loading' || leadStatus === 'success'}
-                style={{ padding: '6px 10px', fontSize: '11px', borderRadius: '4px', border: 'none', background: 'var(--accent)', color: 'white', cursor: 'pointer', fontWeight: 500 }}
-              >
-                {leadStatus === 'loading' ? '...' : leadStatus === 'success' ? '✓' : 'Join'}
-              </button>
-            </form>
-            {leadStatus === 'error' && <div style={{ color: 'var(--danger)', fontSize: '10px', marginTop: '6px' }}>Failed to join</div>}
-          </div>
-        )}
 
         <div className="sidebar-footer">
           <button className="sidebar-link start-fresh-btn" onClick={() => setShowReset(true)} aria-label="Start Fresh">
