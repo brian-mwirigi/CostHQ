@@ -1285,4 +1285,4 @@ export function queryAuditLog(options: {
     total: countRow.total,
   };
 }
-export const _testDb = db;
+export const _testDb: any = db;
