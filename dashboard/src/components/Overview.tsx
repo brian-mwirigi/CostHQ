@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { fetchApi } from '../api';
+import { fetchApi, postApi } from '../api';
 import { useInterval } from '../hooks/useInterval';
 import { formatCost, formatDuration, formatTokens, formatDay } from '../utils/format';
 import { IconSessions, IconDollar, IconClock, IconTrendUp, IconCircleDot, IconFile, IconGitCommit, IconActivity } from './Icons';
@@ -98,9 +98,8 @@ export default function Overview({ onSessionClick }: Props) {
   const toggleProxy = async () => {
     setTogglingProxy(true);
     try {
-      const endpoint = proxyRunning ? '/api/proxy/stop' : '/api/proxy/start';
-      const res = await fetch(`/api/v1${endpoint}`, { method: 'POST' });
-      const data = await res.json();
+      const endpoint = proxyRunning ? '/proxy/stop' : '/proxy/start';
+      const data = await postApi<{ success: boolean; running: boolean }>(endpoint);
       if (data.success) {
         setProxyRunning(data.running);
       }
