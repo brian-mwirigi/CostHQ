@@ -53,20 +53,6 @@
   <p><em>Real-time cost tracking, session analytics, and model breakdown</em></p>
 </div>
 
-<details>
-<summary>View More Screenshots</summary>
-
-### Session Detail View
-<img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/session-detail.png" alt="Session Detail" width="800">
-
-### AI Usage with Agent Tracking
-<img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/agent-tracking.png" alt="Agent Tracking" width="800">
-
-### Cost Charts & Analytics
-<img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/cost-charts.png" alt="Cost Charts" width="800">
-
-</details>
-
 ---
 
 ## The Problem
