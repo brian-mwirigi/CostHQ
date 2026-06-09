@@ -2,14 +2,14 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { 
-  createSession, 
+import {
+  createSession,
   getActiveSession,
   getActiveSessions,
   getActiveSessionForDir,
-  endSession, 
-  getSession, 
-  getSessions, 
+  endSession,
+  getSession,
+  getSessions,
   getStats,
   getFileChanges,
   getCommits,
@@ -32,9 +32,9 @@ import {
 } from './db';
 import { initGit, startGitPolling, stopGitPolling, checkForNewCommits, getGitInfo, cleanupGit, getGitRoot, getGitHead, getGitDiffFiles, getGitLogCommits } from './git';
 import { startWatcher, stopWatcher, cleanupWatcher } from './watcher';
-import { 
-  displaySession, 
-  displaySessions, 
+import {
+  displaySession,
+  displaySessions,
   displayStats,
   displayFileChanges,
   displayCommits
@@ -377,7 +377,7 @@ program
         console.log(chalk.green('\nSession ended\n'));
         displaySession(updated);
       }
-      
+
       // Fire webhook alert
       await fireWebhook(updated);
     }
@@ -423,7 +423,7 @@ program
   .option('--json', 'Output JSON (for agents)')
   .action((id: string | undefined, options) => {
     let session;
-    
+
     if (id) {
       session = getSession(parseInt(id));
     } else {
@@ -718,12 +718,12 @@ program
       const format = options.format === 'csv' ? 'csv' : 'json';
       const output = exportSessions(format, options.limit);
       console.log(output);
-      
+
       const license = getLicense();
       if (license.valid && license.plan !== 'free') {
         console.log(chalk.gray(`Plan: ${license.plan.toUpperCase()} (${license.email})`));
       } else {
-        console.log(chalk.gray(`Plan: Free | Upgrade to Pro: https://CostHQ.dev/pro`));
+        console.log(chalk.gray(`Plan: Free | Upgrade to Pro: https://costhq.lemonsqueezy.com/`));
       }
     }
   });
@@ -931,7 +931,7 @@ program
 
     // Track position so we don't double-count across multiple Stop events
     const posDir = path.join(os.tmpdir(), 'CostHQ-autolog');
-    try { fs.mkdirSync(posDir, { recursive: true }); } catch {}
+    try { fs.mkdirSync(posDir, { recursive: true }); } catch { }
     const posFile = path.join(posDir, `${sessionId}.pos`);
     let lastPos = 0;
     if (fs.existsSync(posFile)) {
@@ -1064,7 +1064,7 @@ program
           console.log(chalk.gray(`  Seats:  ${info.seats}`));
         }
       } else if (info.trial.active) {
-        console.log(chalk.yellow(`  Trial:  ${info.trial.daysRemaining} days remaining`));
+        console.log(chalk.yellow(`  Pro Trial:  ${info.trial.daysRemaining} days remaining`));
       }
     }
   });
@@ -1176,13 +1176,13 @@ localModelsCmd
       console.log(chalk.gray('Example: cs local-models add ollama/llama3 --preset local-gpu\n'));
       return;
     }
-    
+
     let costPerHour: number | null = null;
     if (options.costPerHour !== undefined && !isNaN(options.costPerHour)) costPerHour = options.costPerHour;
     else if (options.preset && COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS]) {
       costPerHour = COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS].costPerHour;
     }
-    
+
     if (costPerHour === null) {
       costPerHour = await promptForCostRate(providerModel);
     }
@@ -1242,7 +1242,7 @@ localModelsCmd
     else if (options.preset && COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS]) {
       costPerHour = COMPUTE_PRESETS[options.preset.toLowerCase() as keyof typeof COMPUTE_PRESETS].costPerHour;
     }
-    
+
     if (costPerHour === null) {
       costPerHour = await promptForCostRate('detected Ollama models');
     }
