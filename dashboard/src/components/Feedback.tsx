@@ -216,6 +216,18 @@ export default function Feedback() {
                   disabled={!message.trim()}
                   onClick={async () => {
                     if (!message.trim()) return;
+
+                    let bodyText = `**Type:** ${feedbackType}\n`;
+                    if (email) bodyText += `**From:** ${email}\n`;
+                    bodyText += `\n**Message:**\n${message}\n`;
+                    
+                    try {
+                      await navigator.clipboard.writeText(bodyText);
+                      alert('Feedback copied to clipboard! Opening Discord... Please DM briani_nesh.');
+                    } catch {
+                      alert('Could not copy to clipboard. Please open Discord and DM briani_nesh with your feedback.');
+                    }
+                    window.open('https://discord.com/app', '_blank');
                     
                     const token = document.querySelector('meta[name="cs-token"]')?.getAttribute('content') || (window as any).__CS_TOKEN || null;
                     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -226,19 +238,6 @@ export default function Feedback() {
                       body: JSON.stringify({ type: feedbackType, message, email: email || undefined }),
                     }).catch(() => {});
 
-                    let bodyText = `**Type:** ${feedbackType}\n`;
-                    if (email) bodyText += `**From:** ${email}\n`;
-                    bodyText += `\n**Message:**\n${message}\n`;
-                    
-                    try {
-                      await navigator.clipboard.writeText(bodyText);
-                      alert('Feedback copied to clipboard! Opening Discord... Please DM briani_nesh.');
-                      window.open('https://discord.com/app', '_blank');
-                    } catch {
-                      alert('Could not copy to clipboard. Please open Discord and DM briani_nesh with your feedback.');
-                      window.open('https://discord.com/app', '_blank');
-                    }
-                    
                     setMessage('');
                     setSuccess(true);
                     loadHistory();
