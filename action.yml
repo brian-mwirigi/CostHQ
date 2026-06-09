@@ -1,4 +1,4 @@
-name: 'CostHQ Budget Breaker'
+name: 'CostHQ'
 description: 'Runs AI agents in CI and fails the build if they exceed a set cost limit'
 author: 'Brian Mwirigi'
 
