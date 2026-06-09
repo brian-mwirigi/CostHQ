@@ -9,7 +9,7 @@ metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/costhq", "
 
 Track agent session costs, file changes, and git commits. Enforces budget limits, tracks local models (Ollama, vLLM), and provides detailed session analytics with a full web dashboard and tamper-evident SOC2 audit logging for Enterprise users.
 
-**Latest: v3.3.0** - Added Enterprise SOC2 Audit Trails and Local Models (compute-time costing).
+**Latest: v4.0.0** - Added Semantic Caching Proxy and Granular Session Termination.
 
 📦 [npm](https://www.npmjs.com/package/costhq) • ⭐ [GitHub](https://github.com/brian-mwirigi/costhq) • 📝 [Changelog](https://github.com/brian-mwirigi/costhq/blob/main/CHANGELOG.md)
 
@@ -86,11 +86,19 @@ Ending the session automatically logs an audit event (Enterprise) and scans git 
 cs dashboard
 ```
 The dashboard shows:
-- **Overview** — KPIs, daily trends, cost velocity.
+- **Overview** — KPIs, daily trends, cost velocity, and the Semantic Caching Proxy toggle.
+- **Command Center** — Real-time CLI execution and granular termination of individual sessions.
 - **Sessions** — searchable/sortable table, per-session details.
 - **Local Models** — Register compute rates ($/hr) for Ollama, vLLM, etc.
 - **Compliance** — View the tamper-evident cryptographic SOC2 audit chain and configure Team Identities (Enterprise only).
 - **Pro Ops** — Manage licensing, PDF exports, and sync features.
+
+### Semantic Caching Proxy
+To save money, CostHQ includes a Semantic Caching Proxy that intercepts API calls and returns cached responses for identical requests:
+```bash
+cs proxy start --port 3739
+```
+Or toggle it directly from the **Overview** page in the dashboard. Route your tools via `OPENAI_BASE_URL=http://127.0.0.1:3739/openai/v1`.
 
 ### View historical stats and details
 ```bash
