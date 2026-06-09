@@ -17,13 +17,20 @@ export default function Console() {
     setTimeout(() => setMessage(null), 3500);
   };
 
+  const getHeaders = () => {
+    const token = document.querySelector('meta[name="cs-token"]')?.getAttribute('content') || (window as any).__CS_TOKEN || null;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
+  };
+
   const handleStart = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading('start');
     try {
-      const res = await fetch('/api/console/start', {
+      const res = await fetch('/api/v1/console/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ name: sessionName, directory })
       });
       const data = await res.json();
@@ -41,9 +48,9 @@ export default function Console() {
     e.preventDefault();
     setLoading('log');
     try {
-      const res = await fetch('/api/console/log-ai', {
+      const res = await fetch('/api/v1/console/log-ai', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         body: JSON.stringify({ 
           provider, 
           model, 
@@ -65,7 +72,10 @@ export default function Console() {
   const handleEnd = async () => {
     setLoading('end');
     try {
-      const res = await fetch('/api/console/end', { method: 'POST' });
+      const res = await fetch('/api/v1/console/end', { 
+        method: 'POST',
+        headers: getHeaders()
+      });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
       showMessage('Session safely terminated and saved.', 'success');
