@@ -6,6 +6,7 @@ import { getProxyCache, setProxyCache, recordProxyCacheHit } from './db';
 import { loadPricing } from './db';
 import { getProPolicy } from '../pro/src/policies';
 import { getSpendPolicyStats, getSessionDetail } from './db';
+import { logAuditEvent } from '../pro/src/audit';
 
 const app = express();
 let serverInstance: Server | null = null;
@@ -57,6 +58,11 @@ app.use(async (req, res) => {
   } else if (req.path.startsWith('/anthropic/')) {
     targetUrl = 'https://api.anthropic.com' + req.path.replace('/anthropic', '');
     provider = 'anthropic';
+  } else if (req.path.startsWith('/mcp/')) {
+    provider = 'mcp';
+    // For MCP, the actual target URL would be determined by a local registry or header.
+    // We default to a placeholder for the gateway prototype.
+    targetUrl = req.headers['x-mcp-target'] as string || 'http://127.0.0.1:8000' + req.path.replace('/mcp', '');
   } else {
     // Default to OpenAI if no prefix is provided (many libraries assume standard /v1)
     targetUrl = 'https://api.openai.com' + req.path;
@@ -85,6 +91,7 @@ app.use(async (req, res) => {
     const identicalCount = recentReqs.filter(r => r.reqHash === reqHash).length;
     if (identicalCount >= 5) {
       console.log(chalk.red(`[FIREWALL] Intelligent Loop Detection triggered. Request blocked.`));
+      logAuditEvent('ai.usage', { action: 'loop_blocked', reqHash });
       res.setHeader('Content-Type', 'application/json');
       return res.status(429).json({
         error: {
@@ -104,17 +111,42 @@ app.use(async (req, res) => {
       if (mandate) {
         try {
           const bodyJson = JSON.parse(bodyBuffer.toString('utf8'));
-          if (bodyJson.model) {
+          
+          // LLM Model Mandate Check
+          if (bodyJson.model && provider !== 'mcp') {
             const requestedModel = bodyJson.model.toLowerCase();
             const isAllowed = mandate.allowedModels.some(m => requestedModel.includes(m.toLowerCase()));
             if (!isAllowed) {
               console.log(chalk.red(`[FIREWALL] Mandate Denied for agent '${agentHeader}'. Model '${bodyJson.model}' is not in allowed list.`));
+              logAuditEvent('policy.change', { action: 'mandate_denied', agent: agentHeader, requestedModel: bodyJson.model });
               res.setHeader('Content-Type', 'application/json');
               return res.status(403).json({
                 error: {
                   message: `CostHQ Margin Firewall: Mandate Denied. Agent '${agentHeader}' is not authorized to use model '${bodyJson.model}'. Allowed models: ${mandate.allowedModels.join(', ')}`,
                   type: "mandate_denied_error",
                   code: 403
+                }
+              });
+            }
+          }
+
+          // MCP Tool Mandate Check
+          if (provider === 'mcp' && bodyJson.method === 'tools/call' && bodyJson.params && bodyJson.params.name) {
+            const requestedTool = bodyJson.params.name.toLowerCase();
+            const mcpAllowed = mandate.allowedMcpTools || [];
+            const isAllowed = mcpAllowed.some(m => requestedTool === m.toLowerCase() || m === '*');
+            
+            if (!isAllowed) {
+              console.log(chalk.red(`[FIREWALL] MCP Mandate Denied for agent '${agentHeader}'. Tool '${bodyJson.params.name}' is not in allowed list.`));
+              logAuditEvent('policy.change', { action: 'mcp_mandate_denied', agent: agentHeader, requestedTool: bodyJson.params.name });
+              res.setHeader('Content-Type', 'application/json');
+              // MCP uses JSON-RPC error format
+              return res.status(403).json({
+                jsonrpc: "2.0",
+                id: bodyJson.id || null,
+                error: {
+                  code: -32000,
+                  message: `CostHQ Margin Firewall: MCP Mandate Denied. Agent '${agentHeader}' is not authorized to execute tool '${bodyJson.params.name}'.`
                 }
               });
             }
