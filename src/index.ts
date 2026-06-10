@@ -28,7 +28,9 @@ import {
   recoverStaleSessions,
   addFeedback,
   setConfig,
-  getConfig
+  getConfig,
+  getUniqueProjectCount,
+  hasProject
 } from './db';
 import { initGit, startGitPolling, stopGitPolling, checkForNewCommits, getGitInfo, cleanupGit, getGitRoot, getGitHead, getGitDiffFiles, getGitLogCommits } from './git';
 import { startWatcher, stopWatcher, cleanupWatcher } from './watcher';
@@ -41,7 +43,7 @@ import {
 } from './formatters';
 import { formatDuration, formatCost, formatComputeTime } from './formatters';
 import { getLicense, isPro, activateLicense, deactivateLicense } from '../pro/src/license';
-import { requirePro } from '../pro/src/gates';
+import { requirePro, getGatedFeatures } from '../pro/src/gates';
 import {
   addLocalModel, removeLocalModel, getLocalModels, isLocalModel,
   isLocalProvider, calculateLocalCost, getLocalModelRate,
@@ -178,6 +180,20 @@ program
     // Resolve to git root when inside a repo (avoids subdirectory fragmentation)
     const gitRoot = await getGitRoot(cwd);
     const scopeDir = gitRoot || cwd;
+
+    // -- MULTI-PROJECT ENFORCEMENT --
+    if (gitRoot && !hasProject(gitRoot)) {
+      if (getUniqueProjectCount() >= 1 && !getGatedFeatures().multiProject) {
+        if (options.json) {
+          jsonError('pro_required', 'CostHQ Free is limited to 1 local project.');
+        } else {
+          console.log(chalk.red('\n[PRO] CostHQ Free is limited to tracking 1 local project.'));
+          console.log(chalk.gray('Upgrade to Pro to unlock unlimited projects for your entire portfolio.'));
+          console.log(chalk.blue('https://costhq.lemonsqueezy.com/\n'));
+          process.exit(1);
+        }
+      }
+    }
 
     // Check for existing active sessions
     const allActive = getActiveSessions();

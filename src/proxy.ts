@@ -7,6 +7,7 @@ import { loadPricing } from './db';
 import { getProPolicy } from '../pro/src/policies';
 import { getSpendPolicyStats, getSessionDetail } from './db';
 import { logAuditEvent } from '../pro/src/audit';
+import { getGatedFeatures } from '../pro/src/gates';
 
 const app = express();
 let serverInstance: Server | null = null;
@@ -89,6 +90,7 @@ app.use(async (req, res) => {
   const reqHash = hashRequest(bodyBuffer, authHeader);
 
   const policy = getProPolicy();
+  const gates = getGatedFeatures();
 
   // Active Financial Firewall Enforcement
   if (policy.firewallEnabled) {
@@ -96,7 +98,8 @@ app.use(async (req, res) => {
     const sessionIdHeader = req.headers['x-costhq-session'];
     const agentHeader = req.headers['x-costhq-agent'] as string | undefined;
 
-    // Intelligent Loop Detection
+    if (gates.advancedFirewall) {
+      // Intelligent Loop Detection
     const loopKey = sessionIdHeader ? `session-${sessionIdHeader}` : 'global';
     const now = Date.now();
     let recentReqs = loopTracker.get(loopKey) || [];
@@ -176,23 +179,24 @@ app.use(async (req, res) => {
     }
 
     // Session Limit Enforcement
-    if (sessionIdHeader) {
-      const sessionId = parseInt(sessionIdHeader as string, 10);
-      if (!isNaN(sessionId)) {
-        const detail = getSessionDetail(sessionId);
-        if (detail && policy.sessionLimit > 0 && detail.session.aiCost >= policy.sessionLimit) {
-          console.log(chalk.red(`[FIREWALL] Session ${sessionId} blocked. Spend ($${detail.session.aiCost.toFixed(4)}) exceeds limit ($${policy.sessionLimit.toFixed(2)})`));
-          res.setHeader('Content-Type', 'application/json');
-          return res.status(429).json({
-            error: {
-              message: `CostHQ Margin Firewall: Session spend ($${detail.session.aiCost.toFixed(4)}) exceeds the configured session limit ($${policy.sessionLimit.toFixed(2)}). Request blocked to protect unit economics.`,
-              type: "budget_exceeded_error",
-              code: 429
-            }
-          });
+      if (sessionIdHeader) {
+        const sessionId = parseInt(sessionIdHeader as string, 10);
+        if (!isNaN(sessionId)) {
+          const detail = getSessionDetail(sessionId);
+          if (detail && policy.sessionLimit > 0 && detail.session.aiCost >= policy.sessionLimit) {
+            console.log(chalk.red(`[FIREWALL] Session ${sessionId} blocked. Spend ($${detail.session.aiCost.toFixed(4)}) exceeds limit ($${policy.sessionLimit.toFixed(2)})`));
+            res.setHeader('Content-Type', 'application/json');
+            return res.status(429).json({
+              error: {
+                message: `CostHQ Margin Firewall: Session spend ($${detail.session.aiCost.toFixed(4)}) exceeds the configured session limit ($${policy.sessionLimit.toFixed(2)}). Request blocked to protect unit economics.`,
+                type: "budget_exceeded_error",
+                code: 429
+              }
+            });
+          }
         }
       }
-    }
+    } // End advancedFirewall check
 
     if (policy.dailyLimit > 0 && stats.todayCost >= policy.dailyLimit) {
       console.log(chalk.red(`[FIREWALL] Request blocked. Daily spend ($${stats.todayCost.toFixed(4)}) exceeds limit ($${policy.dailyLimit.toFixed(2)})`));
@@ -208,7 +212,7 @@ app.use(async (req, res) => {
   }
 
   // Check Semantic Cache (only for POST requests like completions)
-  if (policy.cacheEnabled && req.method === 'POST') {
+  if (gates.proxyCaching && policy.cacheEnabled && req.method === 'POST') {
     const cached = getProxyCache(reqHash);
     if (cached) {
       recordProxyCacheHit(reqHash, cached.cost);
@@ -245,7 +249,7 @@ app.use(async (req, res) => {
     res.send(resBody);
 
     // If it was a successful POST, cache it
-    if (policy.cacheEnabled && req.method === 'POST' && fetchRes.status === 200) {
+    if (gates.proxyCaching && policy.cacheEnabled && req.method === 'POST' && fetchRes.status === 200) {
       try {
         const json = JSON.parse(resBody);
         let cost = 0;

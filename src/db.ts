@@ -1154,6 +1154,25 @@ export function getFeedback(limit = 50): { id: number; type: string; message: st
 
 // ── aitoken-cli Core Merge ──────────────────────────────────
 
+export function getUniqueProjectCount(): number {
+  try {
+    const row = db.prepare('SELECT COUNT(DISTINCT git_root) as count FROM sessions WHERE git_root IS NOT NULL').get() as { count: number };
+    return row.count;
+  } catch (e) {
+    console.error('getUniqueProjectCount error:', e);
+    return 0;
+  }
+}
+
+export function hasProject(gitRoot: string): boolean {
+  try {
+    const row = db.prepare('SELECT 1 FROM sessions WHERE git_root = ? LIMIT 1').get(gitRoot);
+    return !!row;
+  } catch {
+    return false;
+  }
+}
+
 export function calculateCost(provider: string, model: string, promptTokens: number, completionTokens: number): number {
   const pricing = loadPricing();
   
