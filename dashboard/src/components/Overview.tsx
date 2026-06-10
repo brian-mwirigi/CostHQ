@@ -56,6 +56,13 @@ interface ModelBreakdownItem {
   totalCost: number;
 }
 
+interface ProxyStats {
+  entries: number;
+  hits: number;
+  savedCost: number;
+  storedCost: number;
+}
+
 interface Props {
   onSessionClick: (id: number) => void;
 }
@@ -71,12 +78,15 @@ export default function Overview({ onSessionClick }: Props) {
   const [velocity, setVelocity] = useState<CostVelocityItem[]>([]);
   const [modelBreakdown, setModelBreakdown] = useState<ModelBreakdownItem[]>([]);
   const [proxyRunning, setProxyRunning] = useState(false);
+  const [proxyStats, setProxyStats] = useState<ProxyStats | null>(null);
   const [togglingProxy, setTogglingProxy] = useState(false);
 
   const fetchProxyStatus = useCallback(async () => {
     try {
       const res = await fetchApi<{ running: boolean }>('/api/proxy/status');
       setProxyRunning(res.running);
+      const statsRes = await fetchApi<ProxyStats>('/api/proxy/stats');
+      setProxyStats(statsRes);
     } catch (e) {
       console.error(e);
     }
@@ -144,31 +154,46 @@ export default function Overview({ onSessionClick }: Props) {
         </select>
       </div>
 
-      <div style={{ marginBottom: 24, padding: '16px 24px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: 4 }}>Auto Track Costs & APIs</div>
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Route requests through the Semantic Caching Proxy (Port 3739) to save money and automatically track usage.</div>
+      <div style={{ marginBottom: 24, display: 'flex', gap: 16 }}>
+        <div style={{ flex: 1, padding: '16px 24px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-primary)', marginBottom: 4 }}>CostHQ Margin Firewall</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Route requests through Port 3739 to enforce hard API budgets and block runaway loops.</div>
+          </div>
+          <button 
+            onClick={toggleProxy} 
+            disabled={togglingProxy}
+            style={{
+              background: proxyRunning ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
+              border: `1px solid ${proxyRunning ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.1)'}`,
+              color: proxyRunning ? '#10b981' : 'var(--text-secondary)',
+              padding: '8px 16px',
+              borderRadius: '20px',
+              cursor: togglingProxy ? 'not-allowed' : 'pointer',
+              fontWeight: 600,
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}
+          >
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: proxyRunning ? '#10b981' : 'var(--text-tertiary)', boxShadow: proxyRunning ? '0 0 8px #10b981' : 'none' }} />
+            {togglingProxy ? 'Toggling...' : proxyRunning ? 'Firewall Active' : 'Firewall Inactive'}
+          </button>
         </div>
-        <button 
-          onClick={toggleProxy} 
-          disabled={togglingProxy}
-          style={{
-            background: proxyRunning ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.05)',
-            border: `1px solid ${proxyRunning ? 'rgba(16, 185, 129, 0.4)' : 'rgba(255,255,255,0.1)'}`,
-            color: proxyRunning ? '#10b981' : 'var(--text-secondary)',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            cursor: togglingProxy ? 'not-allowed' : 'pointer',
-            fontWeight: 600,
-            transition: 'all 0.2s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8
-          }}
-        >
-          <div style={{ width: 8, height: 8, borderRadius: '50%', background: proxyRunning ? '#10b981' : 'var(--text-tertiary)', boxShadow: proxyRunning ? '0 0 8px #10b981' : 'none' }} />
-          {togglingProxy ? 'Toggling...' : proxyRunning ? 'Proxy Active' : 'Proxy Inactive'}
-        </button>
+
+        {proxyStats && (
+          <div style={{ display: 'flex', gap: 16 }}>
+            <div style={{ width: 200, padding: '16px 24px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 4, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dollars Saved</div>
+              <div style={{ fontWeight: 700, fontSize: '1.5rem', color: '#10b981' }}>{formatCost(proxyStats.savedCost)}</div>
+            </div>
+            <div style={{ width: 200, padding: '16px 24px', background: 'var(--bg-raised)', border: '1px solid var(--border)', borderRadius: '12px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: 4, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Cache Hit Rate</div>
+              <div style={{ fontWeight: 700, fontSize: '1.5rem', color: '#3b82f6' }}>{proxyStats.entries + proxyStats.hits > 0 ? Math.round((proxyStats.hits / (proxyStats.entries + proxyStats.hits)) * 100) : 0}%</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* All KPIs */}

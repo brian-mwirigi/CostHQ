@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { getProxyCache, setProxyCache, recordProxyCacheHit } from './db';
 import { loadPricing } from './db';
 import { getProPolicy } from '../pro/src/policies';
+import { getSpendPolicyStats, getSessionDetail } from './db';
 
 const app = express();
 let serverInstance: Server | null = null;
@@ -65,6 +66,42 @@ app.use(async (req, res) => {
   const reqHash = hashRequest(bodyBuffer, authHeader);
 
   const policy = getProPolicy();
+
+  // Active Financial Firewall Enforcement
+  if (policy.firewallEnabled) {
+    const stats = getSpendPolicyStats();
+    const sessionIdHeader = req.headers['x-costhq-session'];
+
+    if (sessionIdHeader) {
+      const sessionId = parseInt(sessionIdHeader as string, 10);
+      if (!isNaN(sessionId)) {
+        const detail = getSessionDetail(sessionId);
+        if (detail && policy.sessionLimit > 0 && detail.session.aiCost >= policy.sessionLimit) {
+          console.log(chalk.red(`[FIREWALL] Session ${sessionId} blocked. Spend ($${detail.session.aiCost.toFixed(4)}) exceeds limit ($${policy.sessionLimit.toFixed(2)})`));
+          res.setHeader('Content-Type', 'application/json');
+          return res.status(429).json({
+            error: {
+              message: `CostHQ Margin Firewall: Session spend ($${detail.session.aiCost.toFixed(4)}) exceeds the configured session limit ($${policy.sessionLimit.toFixed(2)}). Request blocked to protect unit economics.`,
+              type: "budget_exceeded_error",
+              code: 429
+            }
+          });
+        }
+      }
+    }
+
+    if (policy.dailyLimit > 0 && stats.todayCost >= policy.dailyLimit) {
+      console.log(chalk.red(`[FIREWALL] Request blocked. Daily spend ($${stats.todayCost.toFixed(4)}) exceeds limit ($${policy.dailyLimit.toFixed(2)})`));
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(429).json({ error: { message: `CostHQ Margin Firewall: Daily spend limit ($${policy.dailyLimit.toFixed(2)}) exceeded.`, type: "budget_exceeded_error", code: 429 }});
+    }
+
+    if (policy.totalLimit > 0 && stats.totalCost >= policy.totalLimit) {
+      console.log(chalk.red(`[FIREWALL] Request blocked. Total spend ($${stats.totalCost.toFixed(4)}) exceeds limit ($${policy.totalLimit.toFixed(2)})`));
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(429).json({ error: { message: `CostHQ Margin Firewall: Total spend limit ($${policy.totalLimit.toFixed(2)}) exceeded.`, type: "budget_exceeded_error", code: 429 }});
+    }
+  }
 
   // Check Semantic Cache (only for POST requests like completions)
   if (policy.cacheEnabled && req.method === 'POST') {

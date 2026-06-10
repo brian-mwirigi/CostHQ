@@ -14,7 +14,7 @@ import {
   getDailyTokens, getCostVelocity, getProjectBreakdown, getTokenRatios,
   getSession, getCommits, clearAllData,
   addFeedback, getFeedback,
-  createSession, endSession, addAIUsage, getActiveSessionForDir
+  createSession, endSession, addAIUsage, getActiveSessionForDir, getProxyCacheStats
 } from './db';
 import { getGitDiff, getCommitDiff, getGitDiffStats, getGitRoot, getGitHead, initGit, startGitPolling, stopGitPolling } from './git';
 import { getLicense, activateLicense, deactivateLicense } from '../pro/src/license';
@@ -747,6 +747,14 @@ export function buildApiRouter(port: number = 3737): Router {
 
   router.get('/proxy/status', (req, res) => {
     res.json({ running: isProxyRunning() });
+  });
+
+  router.get('/proxy/stats', (req, res) => {
+    try {
+      res.json(getProxyCacheStats());
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   });
 
   router.post('/proxy/start', (req, res) => {
