@@ -45,6 +45,17 @@ The market doesn't need another passive dashboard. The most terrifying risk for 
 - **Real-Time Cost Tracking:** Know exactly what every user, agent, and session costs you down to the fraction of a cent.
 - **Enterprise SOC2 Audit Logs:** Tamper-evident, cryptographically chained logs of every API call and budget enforcement action.
 
+### CostHQ Free vs Pro
+
+**CostHQ Free** is designed for individual developers and is limited to **1 local project (Git repository)**. It includes core cost tracking, basic session budgets, and the gorgeous real-time dashboard.
+
+**[CostHQ Pro](https://costhq.lemonsqueezy.com/)** unlocks the full Margin Firewall for teams and power users:
+- **Unlimited Local Projects**
+- **Semantic Caching Proxy:** Bypass the OpenAI/Anthropic APIs for duplicate queries and serve them locally for $0.00.
+- **Advanced Firewall Rules:** Intelligent runaway loop detection, strict per-session agent limits, and pre-flight request mandates.
+- **Team & Client Budgets:** Hard cap spend on a per-client or per-repository basis.
+- **Audit Logs:** Immutable audit trails for Enterprise compliance.
+
 ---
 
 ## Dashboard Preview
