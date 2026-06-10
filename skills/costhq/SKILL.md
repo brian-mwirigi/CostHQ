@@ -1,13 +1,13 @@
 ---
 name: costhq
 license: MIT-0
-description: Track agent session costs, file changes, and git commits with CostHQ. Enforces budget limits, tracks local models, and provides Enterprise SOC2 audit trails via a web dashboard. v3.3.0 - Enterprise SOC2 Audit Logging and Local Models.
+description: The Active Circuit Breaker & Cost Tracker for AI SaaS. Enforce hard API budgets, track GPT-4o/Claude costs, and stop runaway agents before they break your unit economics.
 metadata: {"openclaw": {"homepage": "https://github.com/brian-mwirigi/costhq", "requires": {"bins": ["cs"]}, "install": [{"id": "npm", "kind": "node", "package": "costhq", "bins": ["cs"], "label": "Install costhq (npm)"}]}}
 ---
 
-# Session Cost Tracking (CostHQ)
+# Session Cost Tracking & Margin Firewall (CostHQ)
 
-Track agent session costs, file changes, and git commits. Enforces budget limits, tracks local models (Ollama, vLLM), and provides detailed session analytics with a full web dashboard and tamper-evident SOC2 audit logging for Enterprise users.
+The Active Circuit Breaker for AI SaaS. Stop runaway agents before they bankrupt you. CostHQ doesn't just track exact API costs in real-time—we actively enforce them. Set a hard dollar limit per user, per session, or per project. We automatically kill the request before it breaks your unit economics.
 
 **Latest: v4.0.0** - Added Semantic Caching Proxy and Granular Session Termination.
 
@@ -38,46 +38,41 @@ After installing, the `cs` command is available globally. The OpenClaw agent wil
 
 ## When to use
 
-- **Always** start a tracked session at the beginning of a multi-step task
-- **Always** log AI usage after each API call you make
-- **Always** end the session when the task is complete
-- Use `cs dashboard` to review session data, set up local models, or verify the audit trail (Enterprise).
+- **Always** start a tracked session to set the budget for a risky autonomous task
+- **Always** log AI usage after each premium API call (GPT-4o, Claude 3.5 Sonnet)
+- **Always** end the session when the task is complete to log the final spend
+- Use `cs dashboard` to track your margins and selectively kill expensive background sessions.
 
 ## Commands
 
-### Start tracking
+### Start tracking (Engage Firewall)
 ```bash
 # Agent mode (always use --json for structured output):
-cs start "task description" --json --close-stale
+cs start "data extraction pipeline" --json --close-stale
 
 # Resume if a session was left open (e.g. after a crash):
-cs start "task description" --json --resume
+cs start "data extraction pipeline" --json --resume
 ```
 
-### Log AI usage (after each API call)
+### Log AI usage (Track & Enforce)
 ```bash
-# Standard cloud model (cost auto-calculated):
-cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 8000 --completion-tokens 2000 --json
+# High-cost OpenAI model:
+cs log-ai -p openai -m gpt-4o --prompt-tokens 50000 --completion-tokens 15000 -c 1.05 --agent "Extractor" --json
 
-# Local model with compute duration (NEW in v3.3.0):
-# Use --duration in seconds (120) or string (2m30s). Cost is based on registered $/hr rate.
-cs log-ai -p ollama -m llama3 --tokens 4500 --duration 2m30s --local --json
-
-# With all fields:
-cs log-ai -p openai -m gpt-4o --prompt-tokens 5000 --completion-tokens 1500 -c 0.04 --agent "Research Agent" --json
+# High-cost Anthropic model:
+cs log-ai -p anthropic -m claude-3-5-sonnet-20240620 --prompt-tokens 120000 --completion-tokens 4000 --agent "Summarizer" --json
 ```
 
-**Agent Name:** Use `--agent "Agent Name"` to track which agent performed the work.
-**Local Models:** You can track self-hosted models (Ollama, llama.cpp, vLLM) by registering a GPU hourly rate in the dashboard. Use `--duration` and `--local` when logging.
+**Agent Name:** Use `--agent "Agent Name"` to track which specific agent logic is burning through your budget.
 
-### Check current status
+### Check current margins
 ```bash
 cs status --json
 ```
 
-### End session and get summary
+### End session
 ```bash
-cs end -n "completion notes" --json
+cs end -n "Pipeline complete, stayed within budget" --json
 ```
 Ending the session automatically logs an audit event (Enterprise) and scans git for files/commits.
 
@@ -87,14 +82,13 @@ cs dashboard
 ```
 The dashboard shows:
 - **Overview** — KPIs, daily trends, cost velocity, and the Semantic Caching Proxy toggle.
-- **Command Center** — Real-time CLI execution and granular termination of individual sessions.
+- **Command Center** — Real-time CLI execution and granular termination of individual sessions to kill loops manually.
 - **Sessions** — searchable/sortable table, per-session details.
-- **Local Models** — Register compute rates ($/hr) for Ollama, vLLM, etc.
 - **Compliance** — View the tamper-evident cryptographic SOC2 audit chain and configure Team Identities (Enterprise only).
 - **Pro Ops** — Manage licensing, PDF exports, and sync features.
 
 ### Semantic Caching Proxy
-To save money, CostHQ includes a Semantic Caching Proxy that intercepts API calls and returns cached responses for identical requests:
+Stop paying for duplicate queries. CostHQ includes a Semantic Caching Proxy that intercepts API calls and returns cached responses for identical requests for $0.00:
 ```bash
 cs proxy start --port 3739
 ```
@@ -109,25 +103,20 @@ cs export --format json --limit 10
 
 ### Add notes / annotations
 ```bash
-cs note "Tests passing, moving to cleanup" --json
+cs note "Hitting OpenAI API now" --json
 ```
 
 ## Agent Workflow
 
 Agents should **always** use `--json` on every command for structured, parseable output.
 
-1. At task start: `cs start "Fix authentication bug" --json --close-stale`
-2. Add context notes: `cs note "analyzing auth flow" --json`
-3. After each AI call: `cs log-ai -p anthropic -m claude-sonnet-4 --prompt-tokens 800 --completion-tokens 200 --agent "Bug Fixer" --json`
-4. If using a local model: `cs log-ai -p ollama -m mistral --tokens 1000 --duration 45s --local --json`
-5. At task end: `cs end -n "Fixed the auth bug" --json`
-
-## Budget & Pricing
-- Standard pricing is configurable via `cs pricing set my-model 5.00 15.00`.
-- Local model pricing (compute-based) is configured in the `cs dashboard` under **Local Models**.
-- Check `cs status --json` before expensive operations.
+1. At task start: `cs start "Process user documents" --json --close-stale`
+2. Add context notes: `cs note "analyzing document chunks" --json`
+3. After each AI call: `cs log-ai -p openai -m gpt-4o --prompt-tokens 80000 --completion-tokens 2000 --agent "DocProcessor" --json`
+4. Mid-flight check: `cs status --json` (Verify we haven't hit the budget limit)
+5. At task end: `cs end -n "Processed all documents" --json`
 
 ## Important
 - **Always** use `--json` on every command — agents must use structured output.
 - Use `--close-stale` on `cs start` to clear crashed sessions.
-- In Enterprise mode, a cryptographic hash chain automatically logs session starts, ends, data resets, and AI usage.
+- In Enterprise mode, a cryptographic hash chain automatically logs session starts, ends, data resets, and AI usage to guarantee SOC2 compliance.

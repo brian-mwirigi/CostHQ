@@ -1,6 +1,6 @@
 <div align="center">
   <h1>CostHQ</h1>
-  <p><strong>Track what your AI agents actually cost</strong></p>
+  <p><strong>The Active Circuit Breaker & Cost Tracker for AI SaaS</strong></p>
 
   <p>
     <a href="https://www.npmjs.com/package/costhq"><img src="https://img.shields.io/npm/v/costhq?color=brightgreen" alt="npm version"></a>
@@ -11,9 +11,9 @@
     <a href="https://github.com/brian-mwirigi/CostHQ/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/costhq" alt="license"></a>
   </p>
 
-  <p><em>Track agent runs • Monitor files • Log commits • Enforce budgets</em></p>
+  <p><em>Track API Costs • Enforce Hard Budgets • Stop Runaway Agents</em></p>
 
-  <p>If this tool saves you money, consider <a href="https://github.com/sponsors/brian-mwirigi">sponsoring</a> or <a href="https://github.com/brian-mwirigi/CostHQ">giving it a star</a></p>
+  <p>If this tool saves your startup from bankruptcy, consider <a href="https://github.com/sponsors/brian-mwirigi">sponsoring</a> or <a href="https://github.com/brian-mwirigi/CostHQ">giving it a star</a></p>
 
   <p>
     <a href="https://github.com/sponsors/brian-mwirigi"><img src="https://img.shields.io/badge/Sponsor-%E2%9D%A4-pink?logo=github" alt="Sponsor"></a>
@@ -33,16 +33,17 @@
 
 ---
 
-## What's New in v4.0.0
+## Track Costs. Kill Runaway Agents. Protect Your Margins.
 
-- **Cloud Pricing UI** — Add, edit, or override token prices for any cloud model directly from the web dashboard. Built-in defaults updated to June 2026.
-- **Enterprise Spend Firewall** — Actively intercepts and blocks expensive AI API calls that violate daily, total, session, or per-project team budget limits.
-- **Runaway Agent Detection** — Automatically detects agents stuck in infinite loops based on cost velocity ($/min), identical model calls, and repetitive file churn.
-- **Tamper-Evident SOC2 Audit Logging** — Append-only cryptographic logging with chained SHA-256 checksums to guarantee enterprise compliance.
-- **Pro Tier Test Coverage** — Guaranteed reliability with a comprehensive automated test suite for all backend Pro functionality.
-- **Shareable Stats Card** — A beautiful, Spotify-Wrapped style component to export a PNG image of your coding and AI usage stats.
+The market doesn't need another passive dashboard. The most terrifying risk for a bootstrapped AI SaaS founder is a runaway autonomous agent that gets stuck in an infinite `while(true)` loop, slamming GPT-4o for hours and generating a devastating surprise bill.
 
-[Full Changelog →](https://github.com/brian-mwirigi/CostHQ/blob/main/CHANGELOG.md)
+**CostHQ is your Margin Firewall.** We don't just track exact API costs in real-time—we actively enforce them. Set a hard dollar limit per user, per session, or per project. We automatically kill the request before it breaks your unit economics.
+
+### The Firewall Features
+- **Active Circuit Breaker:** Define strict `$X.XX` budgets. The moment an agent exceeds it, CostHQ intercepts the SDK and throws a `BudgetExceededError`, killing the loop instantly.
+- **Semantic Caching Proxy:** Stop paying OpenAI and Anthropic for duplicate queries. Our local proxy caches identical requests and serves them for $0.00.
+- **Real-Time Cost Tracking:** Know exactly what every user, agent, and session costs you down to the fraction of a cent.
+- **Enterprise SOC2 Audit Logs:** Tamper-evident, cryptographically chained logs of every API call and budget enforcement action.
 
 ---
 
@@ -50,32 +51,25 @@
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/brian-mwirigi/CostHQ/main/docs/screenshots/dashboard-overview.png" alt="Dashboard Overview" width="800">
-  <p><em>Real-time cost tracking, session analytics, and model breakdown</em></p>
+  <p><em>The Command Center: Track your margins and selectively kill expensive background sessions</em></p>
 </div>
 
 ---
 
-## The Problem
+## The Core Hook
 
-Your AI agent just ran for 45 minutes. It made 23 API calls, edited 15 files, and created 4 commits.
-
-**You have no idea what it cost.**
-
-OpenClaw, Claude Code, custom agents — they all burn tokens with zero visibility. You find out when the bill arrives.
-
-## The Solution
-
-One command to start tracking. Everything logged automatically.
+**Track exact API costs and set a hard dollar limit per user, per session, or per project. We automatically kill the request before it breaks your unit economics.**
 
 ```bash
-# Start tracking an agent run
-cs start "Fix authentication bug"
+# Start tracking a risky agent operation
+cs start "Data extraction pipeline"
 
-# Agent does its thing... (files, commits, AI calls tracked automatically)
+# Agent goes rogue in an infinite loop...
+# CostHQ hits the Margin Firewall and kills the process at $5.00!
 
-# End and see the damage
+# Review the damage
 cs end
-# Session: 47m • 15 files • 4 commits • $8.47 AI cost
+# Session: 12m • Blocked at $5.00 limit • Catastrophe averted
 ```
 
 ## Works With
