@@ -100,39 +100,22 @@ costhq uses an embedded SQLite database ([better-sqlite3](https://github.com/Wis
 npm install -g costhq
 ```
 
-## Quick Start: Node.js Library (New!)
+## Quickstarts: Connect Your Stack (First 5 Minutes)
 
-With the merge of `aitoken-cli`, you can now use CostHQ as a drop-in Node.js library to track API spend in your own backend applications. Costs are automatically calculated and sent to your dashboard!
+We've made it irresistibly easy to get cost data in any common AI workflow. CostHQ acts as your unified platform for tracking usage and enforcing budgets.
 
-### 1. Drop-in SDK Extensions
+Choose your stack to get started in under 5 minutes:
 
-Simply replace `new OpenAI()` with `new TrackedOpenAI()`:
+- **[Node.js + OpenAI SDK](docs/quickstarts/node-openai.md)** - Drop-in replacement with `TrackedOpenAI`
+- **[Next.js API Routes](docs/quickstarts/nextjs-api-routes.md)** - Capture per-route and per-user costs automatically
+- **[Python (FastAPI / LangChain)](docs/quickstarts/python-fastapi.md)** - Push usage to the CostHQ local daemon from any Python app
 
-```typescript
-import { TrackedOpenAI, TrackedAnthropic } from 'costhq/extensions';
-
-// Works exactly like the official OpenAI SDK, but logs tokens and costs automatically!
-const openai = new TrackedOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const response = await openai.chat.completions.create({
-  model: 'gpt-4o',
-  messages: [{ role: 'user', content: 'Hello!' }]
-});
+### Out-of-the-Box Platform Experience
+Once integrated, you don't need to build your own UI. CostHQ provides a phenomenal, minimalist web dashboard. Simply run:
+```bash
+cs dashboard
 ```
-
-### 2. Functional Wrappers
-
-If you already have a configured client, just wrap your calls:
-
-```typescript
-import { trackedGPT } from 'costhq/wrappers';
-
-const response = await trackedGPT(openaiClient, { 
-  model: 'gpt-4o', 
-  messages 
-});
-```
-
-*(No active session? No problem. The library automatically creates a "Background API Session" for you in the dashboard).*
+You instantly get real-time feedback on usage across projects, session-level summaries, and projected spend analytics.
 
 ---
 

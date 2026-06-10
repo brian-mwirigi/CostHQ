@@ -27,6 +27,21 @@ function hashRequest(body: Buffer, authHeader?: string): string {
     .digest('hex');
 }
 
+async function triggerWebhook(policy: any, payload: any) {
+  if (!policy.alertWebhooks || policy.alertWebhooks.length === 0) return;
+  for (const url of policy.alertWebhooks) {
+    try {
+      await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.error(chalk.red(`[FIREWALL] Failed to send webhook to ${url}`));
+    }
+  }
+}
+
 function calculateOpenAICost(usage: any, model: string, pricing: Record<string, { input: number; output: number }>): number {
   if (!usage) return 0;
   
@@ -92,6 +107,7 @@ app.use(async (req, res) => {
     if (identicalCount >= 5) {
       console.log(chalk.red(`[FIREWALL] Intelligent Loop Detection triggered. Request blocked.`));
       logAuditEvent('ai.usage', { action: 'loop_blocked', reqHash });
+      triggerWebhook(policy, { event: 'firewall_blocked', reason: 'loop_detected', reqHash });
       res.setHeader('Content-Type', 'application/json');
       return res.status(429).json({
         error: {
@@ -119,6 +135,7 @@ app.use(async (req, res) => {
             if (!isAllowed) {
               console.log(chalk.red(`[FIREWALL] Mandate Denied for agent '${agentHeader}'. Model '${bodyJson.model}' is not in allowed list.`));
               logAuditEvent('policy.change', { action: 'mandate_denied', agent: agentHeader, requestedModel: bodyJson.model });
+              triggerWebhook(policy, { event: 'firewall_blocked', reason: 'mandate_denied', agent: agentHeader, requestedModel: bodyJson.model });
               res.setHeader('Content-Type', 'application/json');
               return res.status(403).json({
                 error: {
@@ -139,6 +156,7 @@ app.use(async (req, res) => {
             if (!isAllowed) {
               console.log(chalk.red(`[FIREWALL] MCP Mandate Denied for agent '${agentHeader}'. Tool '${bodyJson.params.name}' is not in allowed list.`));
               logAuditEvent('policy.change', { action: 'mcp_mandate_denied', agent: agentHeader, requestedTool: bodyJson.params.name });
+              triggerWebhook(policy, { event: 'firewall_blocked', reason: 'mcp_mandate_denied', agent: agentHeader, requestedTool: bodyJson.params.name });
               res.setHeader('Content-Type', 'application/json');
               // MCP uses JSON-RPC error format
               return res.status(403).json({
