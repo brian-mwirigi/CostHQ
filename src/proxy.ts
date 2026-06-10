@@ -10,6 +10,8 @@ import { getSpendPolicyStats, getSessionDetail } from './db';
 const app = express();
 let serverInstance: Server | null = null;
 
+const loopTracker = new Map<string, { reqHash: string, timestamp: number }[]>();
+
 export function isProxyRunning(): boolean {
   return serverInstance !== null;
 }
@@ -71,7 +73,59 @@ app.use(async (req, res) => {
   if (policy.firewallEnabled) {
     const stats = getSpendPolicyStats();
     const sessionIdHeader = req.headers['x-costhq-session'];
+    const agentHeader = req.headers['x-costhq-agent'] as string | undefined;
 
+    // Intelligent Loop Detection
+    const loopKey = sessionIdHeader ? `session-${sessionIdHeader}` : 'global';
+    const now = Date.now();
+    let recentReqs = loopTracker.get(loopKey) || [];
+    // Keep requests within last 60 seconds
+    recentReqs = recentReqs.filter(r => now - r.timestamp < 60000);
+    
+    const identicalCount = recentReqs.filter(r => r.reqHash === reqHash).length;
+    if (identicalCount >= 5) {
+      console.log(chalk.red(`[FIREWALL] Intelligent Loop Detection triggered. Request blocked.`));
+      res.setHeader('Content-Type', 'application/json');
+      return res.status(429).json({
+        error: {
+          message: "CostHQ Margin Firewall: Intelligent Loop Detection triggered. Agent is trapped in a pathological retry loop. Request blocked.",
+          type: "loop_detected_error",
+          code: 429
+        }
+      });
+    }
+
+    recentReqs.push({ reqHash, timestamp: now });
+    loopTracker.set(loopKey, recentReqs);
+
+    // Pre-Flight Spend Mandates
+    if (agentHeader && policy.agentMandates && policy.agentMandates.length > 0) {
+      const mandate = policy.agentMandates.find(m => m.agent.toLowerCase() === agentHeader.toLowerCase());
+      if (mandate) {
+        try {
+          const bodyJson = JSON.parse(bodyBuffer.toString('utf8'));
+          if (bodyJson.model) {
+            const requestedModel = bodyJson.model.toLowerCase();
+            const isAllowed = mandate.allowedModels.some(m => requestedModel.includes(m.toLowerCase()));
+            if (!isAllowed) {
+              console.log(chalk.red(`[FIREWALL] Mandate Denied for agent '${agentHeader}'. Model '${bodyJson.model}' is not in allowed list.`));
+              res.setHeader('Content-Type', 'application/json');
+              return res.status(403).json({
+                error: {
+                  message: `CostHQ Margin Firewall: Mandate Denied. Agent '${agentHeader}' is not authorized to use model '${bodyJson.model}'. Allowed models: ${mandate.allowedModels.join(', ')}`,
+                  type: "mandate_denied_error",
+                  code: 403
+                }
+              });
+            }
+          }
+        } catch (e) {
+          // Ignore parse errors, proceed with other checks
+        }
+      }
+    }
+
+    // Session Limit Enforcement
     if (sessionIdHeader) {
       const sessionId = parseInt(sessionIdHeader as string, 10);
       if (!isNaN(sessionId)) {
